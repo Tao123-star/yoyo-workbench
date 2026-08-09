@@ -1,5 +1,5 @@
 /* ============================================================
-   YOYO 数据层 — Mock Data（第一阶段）
+   桃子工作台数据层 — Mock 主数据 + 本地增量
    所有视图只访问 window.YOYO.data.*，第二阶段替换为 API 适配层。
    ============================================================ */
 window.YOYO = window.YOYO || {};
@@ -148,7 +148,7 @@ window.YOYO = window.YOYO || {};
 
   /* ---------- 项目 ---------- */
   var projects = [
-    { id: "p1", name: "YOYO 个人工作台", type: "个人工具", goal: "替代 5 个零散工具，一个页面管理创作全流程", status: "进行中", progress: 35, nextAction: "完成 Media Center", deadline: "08-31", color: "#F04E45" },
+    { id: "p1", name: "桃子工作台", type: "个人工具", goal: "替代 5 个零散工具，一个页面管理创作全流程", status: "进行中", progress: 35, nextAction: "完成 Media Center", deadline: "08-31", color: "#F04E45" },
     { id: "p2", name: "「一人公司」内容系列", type: "内容项目", goal: "10 篇系列内容，建立赛道心智", status: "进行中", progress: 60, nextAction: "发布第 6 篇", deadline: "08-20", color: "#FFC93C" },
     { id: "p3", name: "小黑人 IP 形象体系", type: "AI 实验", goal: "固定提示词模板 + 50 场景图库", status: "进行中", progress: 80, nextAction: "整理提示词到知识库", deadline: "08-15", color: "#7FC4E8" },
     { id: "p4", name: "效率工具 App 季度合作", type: "客户项目", goal: "季度 12 条定制内容", status: "进行中", progress: 45, nextAction: "提交 8 月排期表", deadline: "10-31", color: "#B5D951" }
@@ -227,7 +227,7 @@ window.YOYO = window.YOYO || {};
   function getIgnored() { return LS.get("ignored_topics", []); }
   function getCaptures() { return LS.get("captures", []); }
   function getMyTitles() { return LS.get("titles", []); }
-  function getSettings() { return LS.get("settings", { name: "Yoyo" }); }
+  function getSettings() { return LS.get("settings", { name: "桃子" }); }
   function getGhCache() { return LS.get("gh_cache", null); }
   function setGhCache(list) { LS.set("gh_cache", { list: list, ts: Date.now() }); }
 

@@ -1,6 +1,6 @@
 {
-  "name": "YOYO 工作台",
-  "short_name": "YOYO",
+  "name": "桃子工作台",
+  "short_name": "桃子",
   "description": "以内容创作为核心的个人工作台",
   "start_url": "./index.html",
   "scope": "./",

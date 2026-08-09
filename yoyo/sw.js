@@ -1,4 +1,4 @@
-/* YOYO Service Worker — 网络优先，离线回退缓存 */
+/* 桃子工作台 Service Worker — 网络优先，离线回退缓存 */
 var CACHE = "yoyo-v2";
 var ASSETS = [
   "./",

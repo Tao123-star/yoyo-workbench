@@ -1,4 +1,4 @@
-# YOYO 数据模型（Data Model）
+# 桃子工作台数据模型（Data Model）
 
 > 当前采用混合数据模式：`data.js` 提供 Mock 主数据，用户增量写入 localStorage；GitHub 热门新项目来自实时 API 并缓存 6 小时。
 > 后续目标是把外部请求和持久化统一收口为适配层，尽量保持视图调用签名稳定。

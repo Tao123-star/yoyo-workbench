@@ -1,5 +1,5 @@
 /* ============================================================
-   YOYO App — 路由 + 视图 + 交互（第一阶段 · 全模块 Mock）
+   桃子工作台 — 路由 + 视图 + 交互（混合数据原型）
    ============================================================ */
 (function () {
   "use strict";
@@ -202,7 +202,7 @@
     GH.list.forEach(function (x) { if (x.id === id) r = x; });
     if (!r) return;
     var card = document.querySelector('[data-topic="' + id + '"]');
-    if (card) card.insertAdjacentHTML("beforeend", '<div class="copilot-res" data-typing style="margin-top:4px">YOYO 正在分析这个项目…</div>');
+    if (card) card.insertAdjacentHTML("beforeend", '<div class="copilot-res" data-typing style="margin-top:4px">桃子助手正在分析这个项目…</div>');
     YOYO.ai.ask(
       "你是中文自媒体（AI 工具/效率赛道）的选题顾问。分析这个 GitHub 开源项目的选题价值。\n" +
       "项目：" + r.title + "\n描述：" + r.summary + "\n语言：" + (r.tags[0] || "未知") + "\n近7天 Stars：" + r.stars7 +
@@ -891,7 +891,7 @@
       '<button class="btn btn-soft btn-sm" data-act="set-import">' + icon("upload") + "导入恢复</button>" +
       '<button class="btn btn-ghost btn-sm" data-act="set-clear" style="color:var(--danger)">' + icon("trash") + "清空数据</button>" +
       '</div><input type="file" id="importFile" accept=".json" style="display:none"></div>' +
-      '<div class="card"><div class="sec-title" style="font-size:16px;margin-bottom:12px">关于 YOYO 工作台</div>' +
+      '<div class="card"><div class="sec-title" style="font-size:16px;margin-bottom:12px">关于桃子工作台</div>' +
       '<div style="font-size:13px;color:var(--ink-2);line-height:1.8">AI 能力：DeepSeek ' + (YOYO.ai ? YOYO.ai.MODEL : "") + '（AI 面板 / Copilot / 复盘 / 标题实验室）<br>主题 IP：YOYO（红兜帽 × 星星黄斗篷）<br>其余模块为 Mock 数据，将逐步接入真实信源。</div></div>' +
       "</div>";
   }
@@ -954,7 +954,7 @@
         "工作台当前数据概况：今日待办 " + D.tasks.length + " 条；流水线内容 " + D.pipeline.map(function (p) { return p.label + " " + p.count; }).join("、") +
         "；近7天总播放 " + D.stats.views + "、涨粉 " + D.stats.fans +
         "；表现最好内容「" + D.stats.best.title + "」（" + D.stats.best.platform + " " + D.stats.best.views + " 播放）。";
-      body.insertAdjacentHTML("beforeend", '<div class="ai-msg bot" data-typing>YOYO 正在思考…</div>');
+      body.insertAdjacentHTML("beforeend", '<div class="ai-msg bot" data-typing>桃子助手正在思考…</div>');
       body.scrollTop = body.scrollHeight;
       YOYO.ai.ask(ctx + "\n\n用户的问题：" + q, function (err, text) {
         var typing = body.querySelector("[data-typing]");
@@ -1046,7 +1046,7 @@
     var box = document.getElementById("titleResults");
 
     if (aiReady()) {
-      box.innerHTML = '<div class="copilot-tip">YOYO 正在生成标题…</div>';
+      box.innerHTML = '<div class="copilot-tip">桃子助手正在生成标题…</div>';
       YOYO.ai.ask(
         "请围绕主题「" + k + "」生成 8 个标题，覆盖抖音/小红书/视频号/公众号四个平台，风格涵盖：信息差型、冲突型、好奇型、观点型、结果型、教程型、故事型。" +
         "严格要求：每行一个标题，格式为「平台｜风格｜标题」，不要编号，不要任何额外说明。",
@@ -1090,7 +1090,7 @@
     body.insertAdjacentHTML("beforeend", '<div class="ai-msg user">帮我复盘：' + esc(c.title) + "</div>");
 
     if (aiReady()) {
-      body.insertAdjacentHTML("beforeend", '<div class="ai-msg bot" data-typing>YOYO 正在复盘这条内容…</div>');
+      body.insertAdjacentHTML("beforeend", '<div class="ai-msg bot" data-typing>桃子助手正在复盘这条内容…</div>');
       body.scrollTop = body.scrollHeight;
       var rate = ((c.metrics.likes + c.metrics.comments + c.metrics.saves) / c.metrics.views * 100).toFixed(1);
       YOYO.ai.ask(
@@ -1215,7 +1215,7 @@
         if (aiReady()) {
           var draft = (document.getElementById("studioEditor") || {}).value || "";
           var title = (document.getElementById("studioTitle") || {}).value || "";
-          out.insertAdjacentHTML("afterbegin", '<div class="copilot-res" data-typing><b>' + v + "</b><br>YOYO 正在处理…</div>");
+          out.insertAdjacentHTML("afterbegin", '<div class="copilot-res" data-typing><b>' + v + "</b><br>桃子助手正在处理…</div>");
           YOYO.ai.ask("请对以下内容执行指令：「" + v + "」。\n\n标题：" + title + "\n\n正文草稿：\n" + draft.slice(0, 2500), function (err, text) {
             var typing = out.querySelector("[data-typing]");
             if (typing) typing.remove();
@@ -1252,7 +1252,7 @@
       case "pub-addver": toast("已添加新平台版本草稿（Mock）"); break;
       case "set-save":
         var s0 = D.getSettings();
-        s0.name = document.getElementById("setName").value.trim() || "Yoyo";
+        s0.name = document.getElementById("setName").value.trim() || "桃子";
         D.saveSettings(s0);
         toast("已保存，首页问候语将使用新称呼");
         break;
@@ -1274,7 +1274,7 @@
         var blob = new Blob([D.exportAll()], { type: "application/json" });
         var a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "yoyo-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+        a.download = "taozi-workbench-backup-" + new Date().toISOString().slice(0, 10) + ".json";
         a.click();
         toast("备份已导出");
         break;
@@ -1350,5 +1350,5 @@
   document.getElementById("quickAdd").addEventListener("click", openCmd);
   document.getElementById("bell").addEventListener("click", function () { toast("3 条提醒：报价待回复 · 视频明天排期 · 周更截止周四"); });
 
-  document.getElementById("aiBody").innerHTML = '<div class="ai-msg bot">你好，我是 YOYO 助手。' + (aiReady() ? "AI 已连接，我可以读取当前页面上下文为你工作。" : "到「设置」配置 DeepSeek API Key 后，我就能给出真实回答（现在显示的是示例回复）。") + "</div>";
+  document.getElementById("aiBody").innerHTML = '<div class="ai-msg bot">你好，我是桃子助手。' + (aiReady() ? "AI 已连接，我可以读取当前页面上下文为你工作。" : "到「设置」配置 DeepSeek API Key 后，我就能给出真实回答（现在显示的是示例回复）。") + "</div>";
 })();

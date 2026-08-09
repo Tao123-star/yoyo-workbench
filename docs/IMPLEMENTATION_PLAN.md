@@ -1,11 +1,11 @@
-# YOYO 实施计划（Implementation Plan）
+# 桃子工作台实施计划（Implementation Plan）
 
 > 核心原则：**不为「功能多」牺牲体验。** 每个模块做完 → 运行 → 查 Console → 查响应式 → 确认后再下一个。
 
 ## Phase 1（已完成 ✅）
 
 - [x] 五份文档：架构 / 设计系统 / 页面地图 / 数据模型 / 实施计划
-- [x] YOYO Design System（CSS tokens + 全部基础组件）
+- [x] 桃子工作台 Design System（CSS tokens + 全部基础组件）
 - [x] App Shell：Sidebar 220px + Header + Hash Router + AI Panel + ⌘K + Toast
 - [x] 首页 Today 完整实现（今日重点 / 内容推荐 / 内容进度 / 最近数据 / Quick Capture）
 - [x] Mock 数据层 + localStorage 持久化

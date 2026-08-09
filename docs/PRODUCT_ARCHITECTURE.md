@@ -1,10 +1,10 @@
-# YOYO · Personal Workspace — 产品架构
+# 桃子工作台 — 产品架构
 
 > 版本：v0.2（可用原型）｜日期：2026-08-09
 
 ## 1. 产品定位
 
-YOYO 是一个人的 Personal OS：以「内容创作 + 个人事务管理」为核心的长期工作系统。
+桃子工作台是一个人的 Personal OS：以「内容创作 + 个人事务管理」为核心的长期工作系统。
 不是企业后台，不是 BI 看板。它每天只回答一个问题：
 
 > **我今天最值得做什么？**
@@ -39,7 +39,7 @@ YOYO 是一个人的 Personal OS：以「内容创作 + 个人事务管理」为
 yoyo/                      纯静态工程，零依赖，无构建步骤
 ├── index.html             App Shell（Sidebar + Header + 路由容器 + AI Panel + ⌘K）
 ├── assets/
-│   ├── css/yoyo.css       YOYO Design System（tokens + 全部组件）
+│   ├── css/yoyo.css       桃子工作台 Design System（tokens + 全部组件）
 │   └── js/
 │       ├── data.js        Mock 主数据 + localStorage 增量读写
 │       ├── ai.js          DeepSeek 前端适配层（未配置时回退示例）
