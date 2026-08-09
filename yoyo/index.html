@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>YOYO · 个人工作台</title>
+<!-- iOS / PWA -->
+<meta name="theme-color" content="#FAF7F1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="YOYO">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<link rel="stylesheet" href="assets/css/yoyo.css">
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark mascot" data-mascot></div>
+      <div class="brand-text">
+        <div class="brand-name">YOYO</div>
+        <div class="brand-sub">Personal Workspace</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-foot">
+      <a class="nav-item" href="#/settings" data-route="settings">
+        <span class="nav-ico" data-icon="settings"></span><span>设置</span>
+      </a>
+      <div class="me">
+        <div class="avatar mascot" data-mascot></div>
+        <div class="me-text">
+          <div class="me-name">Yoyo</div>
+          <div class="me-sub">自媒体创作者</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="header">
+      <div class="page-title" id="pageTitle">Today</div>
+      <button class="search-box" id="openCmd">
+        <span class="nav-ico" data-icon="search"></span>
+        <span class="search-ph">搜索内容、话题、客户…</span>
+        <kbd>⌘K</kbd>
+      </button>      <button class="btn btn-primary btn-sm" id="quickAdd">
+        <span class="nav-ico" data-icon="plus"></span>快速新建
+      </button>
+      <button class="icon-btn" id="bell" title="通知">
+        <span class="nav-ico" data-icon="bell"></span>
+        <span class="dot"></span>
+      </button>
+      <div class="avatar avatar-sm mascot" data-mascot></div>
+    </header>
+    <main class="content" id="view"></main>
+  </div>
+
+  <!-- AI Side Panel -->
+  <div class="ai-fab" id="aiFab" title="Ask AI">
+    <span class="nav-ico" data-icon="sparkle"></span>
+  </div>
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-head">
+      <div class="ai-title">
+        <span class="mascot ai-mascot" data-mascot></span>
+        YOYO Assistant
+      </div>
+      <button class="icon-btn" id="aiClose"><span class="nav-ico" data-icon="x"></span></button>
+    </div>
+    <div class="ai-context" id="aiContext"></div>
+    <div class="ai-body" id="aiBody"></div>
+    <div class="ai-chips" id="aiChips"></div>
+    <div class="ai-input-row">
+      <input class="input ai-input" id="aiInput" placeholder="问点什么…">
+      <button class="btn btn-primary btn-sm" id="aiSend">发送</button>
+    </div>
+  </div>
+
+  <!-- Command Center -->
+  <div class="cmd-overlay" id="cmdOverlay">
+    <div class="cmd">
+      <div class="cmd-input-row">
+        <span class="nav-ico" data-icon="search"></span>
+        <input class="cmd-input" id="cmdInput" placeholder="搜索或输入命令…">
+        <kbd>ESC</kbd>
+      </div>
+      <div class="cmd-list" id="cmdList"></div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+</div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+</script>
+</body>
+</html>
