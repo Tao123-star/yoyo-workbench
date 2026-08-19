@@ -43,7 +43,7 @@ window.YOYO = window.YOYO || {};
   }
 
   function isCloudKey(key) {
-    return key.indexOf("yoyo_") === 0 && key !== "yoyo_gh_cache" && key !== "yoyo_hot_cache" && key.indexOf("yoyo_cheer_") !== 0;
+    return key.indexOf("yoyo_") === 0 && key !== "yoyo_gh_cache" && key !== "yoyo_hot_cache" && key !== "yoyo_platform_sync_day" && key.indexOf("yoyo_cheer_") !== 0;
   }
 
   function cloudStorageKeys() {
@@ -354,7 +354,7 @@ window.YOYO = window.YOYO || {};
       return;
     }
     var script = document.createElement("script");
-    script.src = scripts[index] + "?v=20260819-analytics2";
+    script.src = scripts[index] + "?v=20260819-analytics3";
     script.onload = function () { loadScripts(index + 1); };
     script.onerror = function () { showError("工作台加载失败，请刷新重试"); };
     document.body.appendChild(script);

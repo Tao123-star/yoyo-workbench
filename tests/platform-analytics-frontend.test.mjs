@@ -4,10 +4,12 @@ import test from "node:test";
 
 test("media analytics exposes cloud loading and extension-driven sync", async () => {
   const app = await readFile(new URL("../yoyo/assets/js/app.js", import.meta.url), "utf8");
+  const cloud = await readFile(new URL("../yoyo/assets/js/cloud-sync.js", import.meta.url), "utf8");
   assert.match(app, /fetch\("\/api\/platform-analytics"/);
   assert.match(app, /YOYO_PLATFORM_SYNC_REQUEST/);
   assert.match(app, /data-act="platform-sync"/);
   assert.match(app, /手机端直接查看/);
+  assert.match(cloud, /key !== "yoyo_platform_sync_day"/);
 });
 
 test("extension permissions stay limited to workbench and creator platforms", async () => {
