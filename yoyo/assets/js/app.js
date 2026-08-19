@@ -116,6 +116,7 @@
   /* ============ GitHub Trending 实时信源 ============ */
   var GH = { list: [], ts: 0, loading: false, error: null, loaded: false };
   var HOT = { loading: false, attempted: false, stale: false, error: "", lastCheckedAt: 0 };
+  var PA = { loaded: false, loading: false, syncing: false, error: "", updatedAt: 0, platforms: {} };
   var initialHotCache = D.getHotCache();
   if (initialHotCache) {
     D.setAiHotTopics(initialHotCache);
@@ -170,6 +171,108 @@
         if (force) toast("刷新失败：" + HOT.error);
         return null;
       });
+  }
+
+  function platformName(key) {
+    return key === "douyin" ? "抖音" : key === "xiaohongshu" ? "小红书" : key;
+  }
+
+  function loadPlatformAnalytics() {
+    if (PA.loading) return Promise.resolve(PA);
+    PA.loading = true;
+    return fetch("/api/platform-analytics", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error(response.status === 401 ? "登录已失效" : "平台数据读取失败");
+        return response.json();
+      })
+      .then(function (payload) {
+        PA.loading = false;
+        PA.loaded = true;
+        PA.error = "";
+        PA.updatedAt = Number(payload.updatedAt) || 0;
+        PA.platforms = payload.platforms || {};
+        if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+        return PA;
+      })
+      .catch(function (error) {
+        PA.loading = false;
+        PA.loaded = true;
+        PA.error = error.message || "平台数据读取失败";
+        if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+        return PA;
+      });
+  }
+
+  function savePlatformAnalytics(snapshots, errors, manual) {
+    if (!Array.isArray(snapshots) || !snapshots.length) {
+      PA.syncing = false;
+      PA.error = (errors || []).join("；") || "没有读取到可同步的平台数据";
+      if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+      if (manual) toast(PA.error);
+      return Promise.resolve(false);
+    }
+    return fetch("/api/platform-analytics", {
+      method: "PUT", credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ snapshots: snapshots })
+    }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (payload) {
+        if (!response.ok) throw new Error(payload.error || "平台数据保存失败");
+        PA.platforms = Object.assign({}, PA.platforms, payload.platforms || {});
+        PA.updatedAt = Number(payload.updatedAt) || Date.now();
+        PA.syncing = false;
+        PA.error = (errors || []).join("；");
+        localStorage.setItem("yoyo_platform_sync_day", chinaToday());
+        if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+        if (manual) toast("平台数据已同步到云端，手机端刷新后即可查看");
+        return true;
+      });
+    }).catch(function (error) {
+      PA.syncing = false;
+      PA.error = error.message || "平台数据保存失败";
+      if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+      if (manual) toast("同步失败：" + PA.error);
+      return false;
+    });
+  }
+
+  function requestPlatformAnalyticsSync(manual) {
+    if (PA.syncing) return;
+    if (document.documentElement.getAttribute("data-yoyo-platform-sync") !== "ready") {
+      if (manual) toast("本机同步器尚未安装或未启用，请先完成一次安装授权");
+      return;
+    }
+    PA.syncing = true;
+    PA.error = "";
+    if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+    var requestId = "platform-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+    var finished = false;
+    var timeout = setTimeout(function () {
+      if (finished) return;
+      finished = true;
+      window.removeEventListener("message", receive);
+      PA.syncing = false;
+      PA.error = "平台后台响应超时，请确认登录状态后重试";
+      if (currentRoute() === "media" && S.mediaTab === "analytics") render();
+      if (manual) toast(PA.error);
+    }, 45000);
+    function receive(event) {
+      var detail = event.data || {};
+      if (event.source !== window || detail.type !== "YOYO_PLATFORM_SYNC_RESULT" || detail.requestId !== requestId || finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      window.removeEventListener("message", receive);
+      savePlatformAnalytics(detail.snapshots, detail.errors, manual);
+    }
+    window.addEventListener("message", receive);
+    window.postMessage({ type: "YOYO_PLATFORM_SYNC_REQUEST", requestId: requestId }, location.origin);
+  }
+
+  function ensureDailyPlatformAnalytics() {
+    loadPlatformAnalytics().then(function () {
+      if (localStorage.getItem("yoyo_platform_sync_day") === chinaToday()) return;
+      setTimeout(function () { requestPlatformAnalyticsSync(false); }, 800);
+    });
   }
 
   function ghFetch(force) {
@@ -909,10 +1012,48 @@
   }
 
   /* ============ 自媒体中心：数据复盘 ============ */
+  function platformAnalyticsStatus() {
+    if (PA.syncing) return "正在从已登录的创作者后台同步…";
+    if (PA.error) return "部分同步异常：" + PA.error;
+    if (PA.updatedAt) return "云端数据更新于 " + new Date(PA.updatedAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    if (PA.loading) return "正在读取云端平台数据…";
+    return "尚未同步平台数据";
+  }
+
+  function automaticPlatformSection() {
+    var snapshots = [PA.platforms.douyin, PA.platforms.xiaohongshu].filter(Boolean);
+    var html = '<div class="card platform-sync-card"><div class="platform-sync-copy"><div style="font-weight:700">平台数据自动同步</div>' +
+      '<div class="mini-sub">电脑读取已登录的抖音、小红书创作者后台，只把作品统计写入云端；手机端直接查看。</div>' +
+      '<div class="platform-sync-status">' + esc(platformAnalyticsStatus()) + '</div></div>' +
+      '<button class="btn btn-accent btn-sm" data-act="platform-sync"' + (PA.syncing ? ' disabled aria-busy="true"' : '') + '>' + icon("refresh") + (PA.syncing ? "同步中…" : "立即同步") + '</button></div>';
+    if (!snapshots.length) return html + emptyTip("尚无自动同步数据。完成本机同步器安装后，打开工作台会每天自动同步一次。") + '<div class="manual-import-note"><button class="btn btn-soft btn-sm" data-act="review-import">保留手动导入备用</button><input type="file" id="reviewImportFile" accept=".csv,.json" style="display:none"></div>';
+
+    html += '<div class="grid grid-2 platform-summary-grid">' + snapshots.map(function (snapshot) {
+      var m = snapshot.summary || {};
+      return '<article class="card platform-summary"><div class="platform-summary-head"><div><span class="tag tag-' + (snapshot.platform === "douyin" ? "blue" : "red") + '">' + platformName(snapshot.platform) + '</span><strong>' + esc(snapshot.accountName || "已连接账号") + '</strong></div><span class="mini-sub">' + esc(snapshot.period || "最近同步") + '</span></div>' +
+        '<div class="platform-summary-metrics"><span><b class="num">' + fmtNum(m.views || 0) + '</b>观看</span><span><b class="num">' + fmtNum(m.likes || 0) + '</b>点赞</span><span><b class="num">' + fmtNum(m.comments || 0) + '</b>评论</span><span><b class="num">' + fmtNum(m.saves || 0) + '</b>收藏</span><span><b class="num">' + fmtNum(m.followerGain || 0) + '</b>净涨粉</span></div>' +
+        '<div class="mini-sub">采集于 ' + new Date(snapshot.syncedAt).toLocaleString("zh-CN") + ' · ' + (snapshot.works || []).length + ' 条作品</div></article>';
+    }).join("") + "</div>";
+
+    var works = [];
+    snapshots.forEach(function (snapshot) {
+      (snapshot.works || []).forEach(function (work) { works.push(Object.assign({ platform: snapshot.platform }, work)); });
+    });
+    works.sort(function (a, b) { return String(b.publishedAt).localeCompare(String(a.publishedAt)); });
+    html += '<div class="sec-head" style="margin:22px 0 12px"><div class="sec-title" style="font-size:16px">自动同步作品</div><div class="sec-note">最近 ' + Math.min(works.length, 100) + ' 条</div></div>' +
+      '<div class="card platform-work-table" style="padding:8px 0"><table class="table"><thead><tr><th>内容</th><th>平台</th><th>日期</th><th>观看</th><th>点赞</th><th>评论</th><th>收藏</th><th>分享</th></tr></thead><tbody>' + works.slice(0, 100).map(function (work) {
+        var metrics = work.metrics || {};
+        return '<tr><td style="max-width:320px;font-weight:600">' + esc(work.title) + '</td><td>' + platformName(work.platform) + '</td><td>' + esc((work.publishedAt || "—").slice(0, 10)) + '</td><td class="num">' + fmtNum(metrics.views || 0) + '</td><td class="num">' + fmtNum(metrics.likes || 0) + '</td><td class="num">' + fmtNum(metrics.comments || 0) + '</td><td class="num">' + fmtNum(metrics.saves || 0) + '</td><td class="num">' + fmtNum(metrics.shares || 0) + '</td></tr>';
+      }).join("") + '</tbody></table></div><div class="manual-import-note"><button class="btn btn-ghost btn-sm" data-act="review-import">手动导入备用</button><input type="file" id="reviewImportFile" accept=".csv,.json" style="display:none"></div>';
+    return html;
+  }
+
   function mediaAnalytics() {
     var s = D.stats;
     var pub = D.contents.filter(function (c) { return c.metrics; }).sort(function (a, b) { return b.metrics.views - a.metrics.views; });
-    var html = '<div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1"><div style="font-weight:700">内容数据复盘</div><div class="mini-sub">回答什么内容值得继续做；支持 CSV 或 JSON，字段：title/platform/date/views/likes/comments/saves/fans</div></div><button class="btn btn-accent btn-sm" data-act="review-import">' + icon("upload") + '导入数据</button><input type="file" id="reviewImportFile" accept=".csv,.json" style="display:none"></div>';
+    if (!PA.loaded && !PA.loading) loadPlatformAnalytics();
+    var html = automaticPlatformSection();
+    html += '<div class="sec-head" style="margin:22px 0 12px"><div class="sec-title" style="font-size:16px">工作台内容复盘</div><div class="sec-note">自动同步数据与工作台发布记录分开保存</div></div>';
     html += '<div class="grid grid-4">' +
       metricCard("近 7 天发布", s.weekPosts, "条", "") +
       metricCard("总播放", s.views, "", s.viewsDelta) +
@@ -933,7 +1074,7 @@
     html += '<div class="sec-head" style="margin:22px 0 12px"><div class="sec-title" style="font-size:16px">内容排行榜 TOP 10</div><div class="sec-note">按播放排序</div></div>' +
       '<div class="card" style="padding:8px 0"><table class="table"><thead><tr><th>#</th><th>内容</th><th>平台</th><th>播放</th><th>互动率</th><th>收藏</th><th>涨粉</th><th>等级</th><th></th></tr></thead><tbody>' +
       pub.map(function (c, i) {
-        var rate = ((c.metrics.likes + c.metrics.comments + c.metrics.saves) / c.metrics.views * 100).toFixed(1);
+        var rate = c.metrics.views > 0 ? ((c.metrics.likes + c.metrics.comments + c.metrics.saves) / c.metrics.views * 100).toFixed(1) : "0.0";
         var rankColor = i === 0 ? "var(--red)" : i < 3 ? "var(--yellow)" : "var(--ink-3)";
         return '<tr><td class="num" style="font-weight:800;color:' + rankColor + '">' + (i + 1) + '</td><td style="max-width:300px;font-weight:600">' + c.title + "</td><td>" + c.platform + '</td><td class="num">' + fmtNum(c.metrics.views) + '</td><td class="num">' + rate + '%</td><td class="num">' + fmtNum(c.metrics.saves) + '</td><td class="num" style="color:var(--up)">+' + c.metrics.fans + "</td><td>" + gradeTag(c.grade) + '</td><td><button class="btn btn-soft btn-sm" data-act="ai-review" data-id="' + c.id + '">AI 复盘</button></td></tr>';
       }).join("") + "</tbody></table></div>";
@@ -1525,7 +1666,7 @@
     if (aiReady()) {
       body.insertAdjacentHTML("beforeend", '<div class="ai-msg bot" data-typing>桃子助手正在复盘这条内容…</div>');
       body.scrollTop = body.scrollHeight;
-      var rate = ((c.metrics.likes + c.metrics.comments + c.metrics.saves) / c.metrics.views * 100).toFixed(1);
+      var rate = c.metrics.views > 0 ? ((c.metrics.likes + c.metrics.comments + c.metrics.saves) / c.metrics.views * 100).toFixed(1) : "0.0";
       YOYO.ai.ask(
         "请复盘我发布的这条内容。\n标题：" + c.title + "\n平台：" + c.platform + "（" + c.format + "）\n发布日期：" + c.date +
         "\n数据：播放 " + c.metrics.views + "，点赞 " + c.metrics.likes + "，评论 " + c.metrics.comments + "，收藏 " + c.metrics.saves + "，涨粉 " + c.metrics.fans + "，互动率 " + rate + "%" +
@@ -1573,6 +1714,7 @@
       case "edit-home": openHomeEditor(v); break;
       case "open-studio-topics": S.studioTab = "topics"; break;
       case "review-import": document.getElementById("reviewImportFile").click(); break;
+      case "platform-sync": requestPlatformAnalyticsSync(true); break;
       case "save-topic":
         var topic = null;
         D.topics.forEach(function (x) { if (x.id === id) topic = x; });
@@ -1989,6 +2131,7 @@
   hydrateMascots(document);
   render();
   updatePetCount();
+  ensureDailyPlatformAnalytics();
   window.addEventListener("hashchange", function () { persistStudioWorkingCopy(); render(); });
   window.addEventListener("beforeunload", persistStudioWorkingCopy);
 

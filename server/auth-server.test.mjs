@@ -82,6 +82,25 @@ test("account-owned workbench data persists and secrets stay device-local", asyn
   assert.equal(snapshotBody.douyin[0].sourceName, "抖音");
   assert.equal(snapshotBody.xiaohongshu[0].sourceName, "小红书");
 
+  const analyticsDenied = await fetch(`${origin}/api/platform-analytics`);
+  assert.equal(analyticsDenied.status, 401);
+
+  const analyticsSaved = await fetch(`${origin}/api/platform-analytics`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Origin: origin, Cookie: cookie },
+    body: JSON.stringify({ snapshots: [{
+      platform: "xiaohongshu", accountName: "桃子AI重启🍑", period: "近7日",
+      summary: { exposures: 2274, views: 556, followers: 158, followerGain: 4 },
+      works: [{ title: "我的 AI 工作台", publishedAt: "2026-08-15 20:08", metrics: { views: 318, likes: 3, comments: 0, saves: 6, shares: 1 } }]
+    }] })
+  });
+  assert.equal(analyticsSaved.status, 200, await analyticsSaved.text());
+  const analyticsLoaded = await fetch(`${origin}/api/platform-analytics`, { headers: { Cookie: cookie } });
+  const analyticsBody = await analyticsLoaded.json();
+  assert.equal(analyticsLoaded.status, 200);
+  assert.equal(analyticsBody.platforms.xiaohongshu.works[0].metrics.views, 318);
+  assert.equal(analyticsBody.platforms.xiaohongshu.summary.followers, 158);
+
   const previewAuthenticated = await fetch(`${origin}/api/link-preview`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: origin, Cookie: cookie },

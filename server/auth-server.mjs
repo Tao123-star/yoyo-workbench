@@ -5,6 +5,7 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { buildPlatformSnapshot, chinaDay } from "./daily-recommendations.mjs";
 import { extractLinkPreview } from "./link-preview.mjs";
+import { sanitizePlatformSnapshot } from "./platform-analytics.mjs";
 
 const HOST = process.env.AUTH_HOST || "127.0.0.1";
 const PORT = Number(process.env.AUTH_PORT || 8787);
@@ -75,6 +76,16 @@ db.exec(`
     value_json TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS platform_analytics (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL,
+    value_json TEXT NOT NULL,
+    synced_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, platform)
+  );
+  CREATE INDEX IF NOT EXISTS idx_platform_analytics_user_updated
+  ON platform_analytics(user_id, updated_at DESC);
   PRAGMA optimize;
 `);
 
@@ -123,6 +134,15 @@ const upsertRecommendation = db.prepare(`
   INSERT INTO recommendation_cache (day, value_json, updated_at)
   VALUES (?, ?, ?)
   ON CONFLICT(day) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at
+`);
+const findPlatformAnalytics = db.prepare("SELECT platform, value_json, synced_at, updated_at FROM platform_analytics WHERE user_id = ? ORDER BY platform");
+const upsertPlatformAnalytics = db.prepare(`
+  INSERT INTO platform_analytics (user_id, platform, value_json, synced_at, updated_at)
+  VALUES (?, ?, ?, ?, ?)
+  ON CONFLICT(user_id, platform) DO UPDATE SET
+    value_json = excluded.value_json,
+    synced_at = excluded.synced_at,
+    updated_at = excluded.updated_at
 `);
 
 function parseRecommendationRow(row) {
@@ -307,6 +327,50 @@ async function handle(req, res) {
       return json(res, 200, { ok: true, snapshot });
     } catch (error) {
       return json(res, 422, { error: error.message || "平台热点格式不正确" });
+    }
+  }
+
+  if (url.pathname === "/api/platform-analytics" && req.method === "GET") {
+    const user = currentUser(req);
+    if (!user) return json(res, 401, { error: "登录已失效" });
+    const platforms = {};
+    let updatedAt = 0;
+    for (const row of findPlatformAnalytics.all(user.id)) {
+      try {
+        platforms[row.platform] = JSON.parse(row.value_json);
+        updatedAt = Math.max(updatedAt, Number(row.updated_at));
+      } catch {}
+    }
+    return json(res, 200, { updatedAt, platforms });
+  }
+
+  if (url.pathname === "/api/platform-analytics" && req.method === "PUT") {
+    if (!validateOrigin(req)) return json(res, 403, { error: "来源校验失败" });
+    const user = currentUser(req);
+    if (!user) return json(res, 401, { error: "登录已失效" });
+    const body = await readJson(req, 512 * 1024);
+    if (!Array.isArray(body.snapshots) || body.snapshots.length < 1 || body.snapshots.length > 2) {
+      return json(res, 400, { error: "平台同步数据格式不正确" });
+    }
+    try {
+      const snapshots = body.snapshots.map((snapshot) => sanitizePlatformSnapshot(snapshot));
+      if (new Set(snapshots.map((snapshot) => snapshot.platform)).size !== snapshots.length) {
+        return json(res, 400, { error: "平台同步数据重复" });
+      }
+      const updatedAt = Date.now();
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        for (const snapshot of snapshots) {
+          upsertPlatformAnalytics.run(user.id, snapshot.platform, JSON.stringify(snapshot), snapshot.syncedAt, updatedAt);
+        }
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      return json(res, 200, { ok: true, updatedAt, platforms: Object.fromEntries(snapshots.map((snapshot) => [snapshot.platform, snapshot])) });
+    } catch (error) {
+      return json(res, 422, { error: error.message || "平台同步数据格式不正确" });
     }
   }
 

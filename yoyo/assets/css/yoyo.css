@@ -320,6 +320,21 @@ input { font-family: inherit; }
 .hot-angle { margin-top: 3px; color: var(--ink-3); font-size: 11.5px; line-height: 1.45; }
 .hot-actions { display: flex; gap: 7px; }
 
+/* ============ Platform analytics sync ============ */
+.platform-sync-card { margin-bottom: 14px; display: flex; align-items: center; gap: 16px; }
+.platform-sync-copy { flex: 1; min-width: 0; }
+.platform-sync-status { margin-top: 7px; color: var(--ink-2); font-size: 12px; font-weight: 600; }
+.platform-sync-card .btn[aria-busy="true"] svg { animation: hot-refresh-spin .8s linear infinite; }
+.platform-summary-grid { margin-top: 14px; }
+.platform-summary { display: flex; flex-direction: column; gap: 14px; }
+.platform-summary-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.platform-summary-head > div { display: flex; align-items: center; gap: 8px; }
+.platform-summary-metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.platform-summary-metrics span { display: flex; flex-direction: column; gap: 3px; color: var(--ink-3); font-size: 11px; }
+.platform-summary-metrics b { color: var(--ink); font-size: 17px; }
+.manual-import-note { margin: 10px 0 0; display: flex; justify-content: flex-end; }
+.platform-work-table { overflow-x: auto; }
+
 /* ============ Pipeline ============ */
 .pipe-card { text-align: left; }
 .pipe-value { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
@@ -817,12 +832,19 @@ input { font-family: inherit; }
   .hot-topic-row { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 14px 0; }
   .hot-actions { grid-column: 2; }
   .hot-actions .btn { min-height: 38px; height: 38px; padding-inline: 10px; }
+  .platform-sync-card { align-items: stretch; flex-direction: column; }
+  .platform-sync-card .btn { width: 100%; }
+  .platform-summary-grid { grid-template-columns: 1fr; }
+  .platform-summary-metrics { grid-template-columns: repeat(3, 1fr); }
+  .platform-work-table .table { min-width: 760px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .yoyo-pet-btn.cheer { animation: none; }
   .hot-refresh-btn[aria-busy="true"] svg { animation: none; }
+  .platform-sync-card .btn[aria-busy="true"] svg { animation: none; }
 }
 .hot-signal-link { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
 .hot-signal-link:hover { color: var(--ink-1); }
+
 .hot-signal-metric { color: var(--up); font-weight: 600; }

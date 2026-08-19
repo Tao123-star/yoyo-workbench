@@ -22,6 +22,10 @@ workbench.taozipipi.cn {
     reverse_proxy workbench-auth:8787
   }
 
+  handle /api/platform-analytics* {
+    reverse_proxy workbench-auth:8787
+  }
+
   @public path /login.html /assets/css/auth.css /assets/js/login.js /assets/yoyo-pet.png /assets/workbench-bg.webp /assets/icon-192.png
   handle @public {
     root * /srv/workbench

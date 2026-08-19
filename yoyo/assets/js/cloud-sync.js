@@ -22,7 +22,7 @@ window.YOYO = window.YOYO || {};
     remoteUpdate: false,
     error: ""
   };
-  var scripts = ["assets/js/data.js?v=20260819-platform1", "assets/js/ai.js?v=20260819-platform1", "assets/js/account.js?v=20260819-platform1", "assets/js/app.js?v=20260819-platform1"];
+  var scripts = ["assets/js/data.js", "assets/js/ai.js", "assets/js/account.js", "assets/js/app.js"];
 
   function clone(value) {
     if (value === undefined) return undefined;
@@ -354,7 +354,7 @@ window.YOYO = window.YOYO || {};
       return;
     }
     var script = document.createElement("script");
-    script.src = scripts[index] + "?v=20260814-cloud4";
+    script.src = scripts[index] + "?v=20260819-analytics2";
     script.onload = function () { loadScripts(index + 1); };
     script.onerror = function () { showError("工作台加载失败，请刷新重试"); };
     document.body.appendChild(script);
