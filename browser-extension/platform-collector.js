@@ -54,7 +54,7 @@
     await loadXhsCards();
     var cards = Array.from(document.querySelectorAll(".note-card")).slice(0, 100);
     if (!cards.length) throw new Error("没有读取到作品，请打开“笔记管理”后重试");
-    var works = cards.map(function (card) {
+    var works = cards.map(function (card, index) {
       var stats = Array.from(card.querySelectorAll(".note-card__stat")).map(function (node) { return number(node.textContent); });
       var id = xhsId(card, index);
       return {
@@ -125,7 +125,7 @@
     await loadDouyinCards();
     var cards = douyinCardNodes().slice(0, 100);
     if (!cards.length) throw new Error("没有读取到作品，抖音页面结构可能已更新");
-    var works = cards.map(function (card, index) {
+    var works = cards.map(function (card) {
       var lines = (card.innerText || "").split("\n").map(function (line) { return line.trim(); }).filter(Boolean);
       var dateText = ((card.querySelector("[class*='info-time-']") || {}).textContent || lines.find(function (line) { return /\d{4}\s*[年\/.\-]\s*\d{1,2}\s*[月\/.\-]\s*\d{1,2}/.test(line); }) || "").trim();
       var titleNode = card.querySelector("[class*='info-title-text-']");

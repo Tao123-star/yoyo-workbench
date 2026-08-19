@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "桃子工作台平台数据同步器",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "从已登录的抖音、小红书创作者后台读取作品统计，并同步到桃子工作台。",
   "permissions": ["tabs", "storage"],
   "host_permissions": [
