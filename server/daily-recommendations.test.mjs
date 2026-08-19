@@ -1,54 +1,43 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDailyRecommendations, buildRecommendationsFromSignals, chinaDay } from "./daily-recommendations.mjs";
+import { buildPlatformSnapshot, chinaDay, normalizePlatformUrl } from "./daily-recommendations.mjs";
 
-function signals(count, sourceName = "GitHub") {
+function rows(platform, count) {
+  const host = platform === "douyin" ? "https://creator.douyin.com/creator-micro/home?tracking=remove" : "https://www.xiaohongshu.com/explore/note-id?tracking=remove";
   return Array.from({ length: count }, (_, index) => ({
-    title: `AI project ${index + 1}`,
-    description: `Description ${index + 1}`,
-    sourceName,
-    sourceUrl: `https://example.com/${index + 1}`,
-    score: count - index
+    title: `AI 平台信号 ${index + 1}`,
+    signalTitle: `原始话题 ${index + 1}`,
+    angle: `围绕原始话题 ${index + 1} 做真实验证`,
+    sourceUrl: host,
+    metric: `${index + 1}万互动`
   }));
 }
 
 test("chinaDay follows Asia/Shanghai instead of UTC", () => {
-  assert.equal(chinaDay(new Date("2026-08-16T16:30:00.000Z")), "2026-08-17");
+  assert.equal(chinaDay(new Date("2026-08-18T16:30:00.000Z")), "2026-08-19");
 });
 
-test("daily lists contain ten traceable, platform-specific candidates", () => {
-  const result = buildRecommendationsFromSignals(signals(12), "2026-08-17");
-  assert.equal(result.douyin.length, 10);
+test("platform snapshot keeps native sources and strips session query data", () => {
+  const result = buildPlatformSnapshot({
+    douyin: rows("douyin", 5),
+    xiaohongshu: rows("xiaohongshu", 10),
+    now: new Date("2026-08-19T03:00:00Z")
+  });
+  assert.equal(result.updatedAt, "2026-08-19");
+  assert.equal(result.sourceNative, true);
+  assert.equal(result.douyin.length, 5);
   assert.equal(result.xiaohongshu.length, 10);
-  assert.equal(result.official, false);
-  assert.match(result.douyin[0].sourceUrl, /^https:\/\//);
-  assert.notEqual(result.douyin[0].title, result.xiaohongshu[0].title);
-  assert.equal(result.douyin[0].signalTitle, result.xiaohongshu[0].signalTitle);
+  assert.equal(result.douyin[0].sourceName, "抖音");
+  assert.equal(result.xiaohongshu[0].sourceName, "小红书");
+  assert.equal(new URL(result.xiaohongshu[0].sourceUrl).search, "");
 });
 
-test("duplicate signals are removed and insufficient evidence is rejected", () => {
-  const duplicated = [...signals(9), signals(1)[0]];
-  assert.throws(() => buildRecommendationsFromSignals(duplicated), /not enough verified/);
+test("cross-platform and non-platform source links are rejected", () => {
+  assert.throws(() => normalizePlatformUrl("https://github.com/example/project", "douyin"), /不是抖音平台/);
+  assert.throws(() => normalizePlatformUrl("https://www.douyin.com/hot", "xiaohongshu"), /不是小红书平台/);
 });
 
-test("one failed source still succeeds when the other has enough signals", async () => {
-  const fetchImpl = async (url) => {
-    if (String(url).includes("api.github.com")) throw new Error("offline");
-    return {
-      ok: true,
-      json: async () => ({ hits: signals(12, "Hacker News").map((item, index) => ({
-        title: item.title,
-        points: 100 - index,
-        url: item.sourceUrl,
-        objectID: String(index + 1)
-      })) })
-    };
-  };
-  const result = await buildDailyRecommendations({ fetchImpl, now: new Date("2026-08-17T03:00:00Z") });
-  assert.equal(result.douyin.length, 10);
-  assert.match(result.source, /Hacker News/);
-});
-
-test("all failed sources reject instead of inventing a current date", async () => {
-  await assert.rejects(() => buildDailyRecommendations({ fetchImpl: async () => { throw new Error("offline"); } }), /not enough verified/);
+test("empty or oversized platform snapshots are rejected", () => {
+  assert.throws(() => buildPlatformSnapshot({ douyin: [], xiaohongshu: rows("xiaohongshu", 10) }), /1–10 条/);
+  assert.throws(() => buildPlatformSnapshot({ douyin: rows("douyin", 5), xiaohongshu: rows("xiaohongshu", 11) }), /1–10 条/);
 });

@@ -22,7 +22,7 @@ window.YOYO = window.YOYO || {};
     remoteUpdate: false,
     error: ""
   };
-  var scripts = ["assets/js/data.js?v=20260817-daily1", "assets/js/ai.js?v=20260817-daily1", "assets/js/account.js?v=20260817-daily1", "assets/js/app.js?v=20260817-daily1"];
+  var scripts = ["assets/js/data.js?v=20260819-platform1", "assets/js/ai.js?v=20260819-platform1", "assets/js/account.js?v=20260819-platform1", "assets/js/app.js?v=20260819-platform1"];
 
   function clone(value) {
     if (value === undefined) return undefined;

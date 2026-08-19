@@ -64,6 +64,24 @@ test("account-owned workbench data persists and secrets stay device-local", asyn
   const recommendationsDenied = await fetch(`${origin}/api/recommendations`);
   assert.equal(recommendationsDenied.status, 401);
 
+  const platformRows = (platform) => [{
+    title: "平台 AI 信号", signalTitle: "平台原始内容", angle: "基于原始内容做真实验证",
+    sourceUrl: platform === "douyin" ? "https://creator.douyin.com/creator-micro/home" : "https://www.xiaohongshu.com/explore/note-id",
+    metric: "可见互动 100"
+  }];
+  const snapshotSaved = await fetch(`${origin}/api/recommendations/platform-snapshot`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Origin: origin, Cookie: cookie },
+    body: JSON.stringify({ douyin: platformRows("douyin"), xiaohongshu: platformRows("xiaohongshu") })
+  });
+  assert.equal(snapshotSaved.status, 200, await snapshotSaved.text());
+  const snapshotLoaded = await fetch(`${origin}/api/recommendations`, { headers: { Cookie: cookie } });
+  const snapshotBody = await snapshotLoaded.json();
+  assert.equal(snapshotLoaded.status, 200);
+  assert.equal(snapshotBody.sourceNative, true);
+  assert.equal(snapshotBody.douyin[0].sourceName, "抖音");
+  assert.equal(snapshotBody.xiaohongshu[0].sourceName, "小红书");
+
   const previewAuthenticated = await fetch(`${origin}/api/link-preview`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: origin, Cookie: cookie },

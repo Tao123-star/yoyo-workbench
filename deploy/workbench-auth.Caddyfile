@@ -18,7 +18,7 @@ workbench.taozipipi.cn {
     reverse_proxy workbench-auth:8787
   }
 
-  handle /api/recommendations {
+  handle /api/recommendations* {
     reverse_proxy workbench-auth:8787
   }
 

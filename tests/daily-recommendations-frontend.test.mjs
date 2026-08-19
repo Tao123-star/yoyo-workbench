@@ -7,10 +7,10 @@ test("daily public recommendation cache stays outside personal cloud data", asyn
   assert.match(cloudSync, /key !== "yoyo_hot_cache"/);
 });
 
-test("home requests the protected daily endpoint and keeps the non-official label", async () => {
+test("home requests platform snapshots and keeps the source boundary visible", async () => {
   const app = await readFile(new URL("../yoyo/assets/js/app.js", import.meta.url), "utf8");
   assert.match(app, /fetch\("\/api\/recommendations"/);
-  assert.match(app, /每日自动更新/);
-  assert.match(app, /非平台官方实时榜/);
+  assert.match(app, /已核实平台来源/);
+  assert.match(app, /平台真实内容信号，非官方热榜排名/);
   assert.match(app, /信号来源/);
 });

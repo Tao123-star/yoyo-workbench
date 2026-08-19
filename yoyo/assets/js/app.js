@@ -395,6 +395,7 @@
         '<div class="hot-rank num">' + (index + 1) + '</div>' +
         '<div class="hot-main"><div class="hot-title">' + esc(topic.title) + '</div>' +
         '<div class="hot-angle">' + esc(topic.angle) +
+        (topic.metric ? ' · <span class="hot-signal-metric">' + esc(topic.metric) + '</span>' : "") +
         (safeExternalUrl(topic.sourceUrl) ? ' · <a href="' + safeExternalUrl(topic.sourceUrl) + '" target="_blank" rel="noopener" class="hot-signal-link">信号来源：' + esc(topic.sourceName || "公开网页") + ' ↗</a>' : "") + '</div></div>' +
         '<div class="hot-actions"><button class="btn btn-soft btn-sm" data-act="save-hot-topic" data-id="' + topic.id + '" data-platform="' + platform + '"' + (saved ? " disabled" : "") + '>' + (saved ? "已加入 ✓" : "加入话题库") + '</button>' +
         '<button class="btn btn-accent btn-sm" data-act="create-hot-topic" data-id="' + topic.id + '" data-platform="' + platform + '">' + icon("pen") + '开始创作</button></div>' +
@@ -441,17 +442,17 @@
     var noteText = ghTop.length
       ? ghTop.length + " 个 GitHub 实时热点 · 更新于 " + new Date(GH.ts).toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" })
       : (GH.loading ? "正在拉取 GitHub 实时热点…" : "暂无实时推荐");
-    var hotStatus = HOT.loading ? " · 正在更新今日推荐…" :
-      (HOT.stale ? " · 今日信源暂不可用，使用最近成功更新" :
-        (HOT.error ? " · " + HOT.error + "，保留最近成功推荐" : " · 每日自动更新"));
+    var hotStatus = HOT.loading ? " · 正在读取平台快照…" :
+      (HOT.stale ? " · 使用最近一次已核实平台数据" :
+        (HOT.error ? " · " + HOT.error : " · 已核实平台来源"));
     html += '<section class="sec"><div class="sec-head"><div class="sec-title">今日内容推荐</div>' +
       '<div class="sec-note">先从 AI 行业热点选题开始</div>' +
       '<a class="sec-more" href="#/studio" data-act="open-studio-topics">查看话题库 →</a></div>' +
-      '<div class="hot-board"><div class="hot-board-head"><div><div class="hot-board-title">AI 行业热点选题 Top 10</div>' +
-      '<div class="hot-board-note">' + esc(D.aiHotTopics.source) + ' · 更新于 ' + esc(D.aiHotTopics.updatedAt) + esc(hotStatus) + ' · 非平台官方实时榜</div></div>' +
+      '<div class="hot-board"><div class="hot-board-head"><div><div class="hot-board-title">AI 行业平台内容信号</div>' +
+      '<div class="hot-board-note">' + esc(D.aiHotTopics.source) + ' · 更新于 ' + esc(D.aiHotTopics.updatedAt) + esc(hotStatus) + ' · 平台真实内容信号，非官方热榜排名</div></div>' +
       '<div class="seg hot-platform-tabs" role="tablist" aria-label="热点平台">' +
-      '<button class="seg-btn' + (S.hotPlatform === "douyin" ? " on" : "") + '" data-act="hot-platform" data-v="douyin" role="tab">抖音 Top 10</button>' +
-      '<button class="seg-btn' + (S.hotPlatform === "xiaohongshu" ? " on" : "") + '" data-act="hot-platform" data-v="xiaohongshu" role="tab">小红书 Top 10</button></div></div>' +
+      '<button class="seg-btn' + (S.hotPlatform === "douyin" ? " on" : "") + '" data-act="hot-platform" data-v="douyin" role="tab">抖音 ' + (D.aiHotTopics.douyin || []).length + ' 条</button>' +
+      '<button class="seg-btn' + (S.hotPlatform === "xiaohongshu" ? " on" : "") + '" data-act="hot-platform" data-v="xiaohongshu" role="tab">小红书 ' + (D.aiHotTopics.xiaohongshu || []).length + ' 条</button></div></div>' +
       '<div class="hot-topic-list">' + hotTopicRows(S.hotPlatform) + '</div></div>' +
       '<div class="sec-head home-github-head"><div class="sec-title" style="font-size:16px">GitHub 实时热点</div><div class="sec-note">' + noteText + '</div></div>' +
       '<div class="topic-grid">' + ghTop.map(ghCard).join("") + picked.map(topicCard).join("") + "</div></section>";

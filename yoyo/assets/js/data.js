@@ -44,37 +44,14 @@ window.YOYO = window.YOYO || {};
   var upcoming = LS.get("upcoming", []);
   var aiInsights = [];
 
-  /*
-   * AI 行业内容选题榜：人工维护的公开趋势整理，不冒充平台官方实时榜。
-   * updatedAt/source 会直接显示在首页，便于判断时效和数据边界。
-   */
+  /* 平台热点只接受经登录页面核实的快照；没有快照时保持为空。 */
   var aiHotTopics = {
-    updatedAt: "2026-08-12",
-    source: "公开趋势与行业动态人工整理",
-    douyin: [
-      { id: "dy-ai-01", title: "普通人第一次用 AI Agent 完成一天工作", angle: "用真实任务做前后对比，展示节省了哪些步骤" },
-      { id: "dy-ai-02", title: "不会写代码，也能做出自己的 AI 小工具吗", angle: "全程录屏，用一个最小成品回答问题" },
-      { id: "dy-ai-03", title: "AI 自动做 PPT 到底能不能直接交付", angle: "同一份需求实测生成、修改与最终效果" },
-      { id: "dy-ai-04", title: "我把重复工作交给 AI 后，真正省下了什么", angle: "拆解一个可复用的自动化工作流" },
-      { id: "dy-ai-05", title: "AI 数字人与真人出镜，效果差在哪里", angle: "同文案双版本对比停留、信任与制作成本" },
-      { id: "dy-ai-06", title: "国产大模型做中文内容，哪一步最实用", angle: "围绕选题、写稿、改稿三个环节现场测试" },
-      { id: "dy-ai-07", title: "AI 搜索能替代传统搜索吗", angle: "用同一个现实问题对比答案、来源与核验成本" },
-      { id: "dy-ai-08", title: "一张照片如何变成短视频素材", angle: "完整展示生成、修正和剪辑衔接过程" },
-      { id: "dy-ai-09", title: "AI 生成内容最容易露馅的 3 个地方", angle: "用失败案例讲人味、事实和审美检查" },
-      { id: "dy-ai-10", title: "2026 年普通人该学哪一种 AI 能力", angle: "从真实项目出发，给出可执行的能力路线" }
-    ],
-    xiaohongshu: [
-      { id: "xhs-ai-01", title: "我的 AI 工作台：首页只留真正会用的功能", angle: "用改造前后截图说明减法设计和使用路径" },
-      { id: "xhs-ai-02", title: "零基础做 AI 项目的完整复盘模板", angle: "分享目标、过程、证据、问题和下一步模板" },
-      { id: "xhs-ai-03", title: "我常用的 AI 提示词不是一句话，而是一套流程", angle: "公开输入、确认、执行、验收四段式结构" },
-      { id: "xhs-ai-04", title: "AI 帮我整理知识库，但这 3 类内容绝不能自动改", angle: "强调原文、隐私和待核实信息的安全边界" },
-      { id: "xhs-ai-05", title: "非程序员也能看懂的 AI Agent 入门图", angle: "用生活化角色解释目标、工具、记忆和检查" },
-      { id: "xhs-ai-06", title: "用 AI 做自媒体，一条内容的真实成本是多少", angle: "拆分选题、脚本、视觉、剪辑和复盘时间" },
-      { id: "xhs-ai-07", title: "5 个看起来很强、实际不能交付的 AI 结果", angle: "用可验证证据区分演示、原型与真正完成" },
-      { id: "xhs-ai-08", title: "AI 图片如何保持同一个人物和画风", angle: "展示参考图、约束词、局部修改和一致性检查" },
-      { id: "xhs-ai-09", title: "我的第一套 AI 自动化：从想法到发布清单", angle: "以可复制清单展示每个环节和人工确认点" },
-      { id: "xhs-ai-10", title: "转行学 AI，不要先囤课，先做这个最小项目", angle: "给出 7 天可完成且能展示的作品路线" }
-    ]
+    updatedAt: "—",
+    source: "等待已核实的平台热点",
+    sourceNative: true,
+    stale: true,
+    douyin: [],
+    xiaohongshu: []
   };
 
   var pipeline = [
@@ -217,8 +194,8 @@ window.YOYO = window.YOYO || {};
   function setGhCache(list) { LS.set("gh_cache", { list: list, ts: Date.now() }); }
   function getHotCache() { return LS.get("hot_cache", null); }
   function setAiHotTopics(payload) {
-    if (!payload || !Array.isArray(payload.douyin) || !Array.isArray(payload.xiaohongshu) ||
-        payload.douyin.length !== 10 || payload.xiaohongshu.length !== 10) return false;
+    if (!payload || !payload.sourceNative || !Array.isArray(payload.douyin) || !Array.isArray(payload.xiaohongshu) ||
+        payload.douyin.length < 1 || payload.douyin.length > 10 || payload.xiaohongshu.length < 1 || payload.xiaohongshu.length > 10) return false;
     Object.keys(aiHotTopics).forEach(function (key) { delete aiHotTopics[key]; });
     Object.assign(aiHotTopics, payload);
     LS.set("hot_cache", payload);

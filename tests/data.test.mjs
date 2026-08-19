@@ -27,7 +27,7 @@ test("studio confirmation persists topic, draft and recoverable working copy", a
 
   const hotReference = data.aiHotTopics;
   const dailyHot = {
-    updatedAt: "2026-08-17", source: "公开 AI 行业信号：GitHub", official: false,
+    updatedAt: "2026-08-17", source: "抖音 + 小红书", official: false, sourceNative: true,
     douyin: Array.from({ length: 10 }, (_, index) => ({ id: `dy-${index}`, title: `抖音 ${index}`, angle: "实测" })),
     xiaohongshu: Array.from({ length: 10 }, (_, index) => ({ id: `xhs-${index}`, title: `小红书 ${index}`, angle: "清单" }))
   };

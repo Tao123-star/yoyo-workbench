@@ -3,7 +3,7 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { buildDailyRecommendations, chinaDay } from "./daily-recommendations.mjs";
+import { buildPlatformSnapshot, chinaDay } from "./daily-recommendations.mjs";
 import { extractLinkPreview } from "./link-preview.mjs";
 
 const HOST = process.env.AUTH_HOST || "127.0.0.1";
@@ -17,7 +17,6 @@ const MAX_AUTH_BODY_BYTES = 16 * 1024;
 const MAX_DATA_BODY_BYTES = 2 * 1024 * 1024;
 const failedLogins = new Map();
 const linkPreviewRequests = new Map();
-const recommendationBuilds = new Map();
 
 if (!SETUP_TOKEN || SETUP_TOKEN.length < 24) {
   throw new Error("AUTH_SETUP_TOKEN must contain at least 24 characters");
@@ -129,19 +128,6 @@ const upsertRecommendation = db.prepare(`
 function parseRecommendationRow(row) {
   if (!row) return null;
   try { return JSON.parse(row.value_json); } catch { return null; }
-}
-
-async function getDailyRecommendations(day) {
-  const cached = parseRecommendationRow(findRecommendation.get(day));
-  if (cached) return cached;
-  if (!recommendationBuilds.has(day)) {
-    const pending = buildDailyRecommendations().then((value) => {
-      upsertRecommendation.run(day, JSON.stringify(value), Date.now());
-      return value;
-    }).finally(() => recommendationBuilds.delete(day));
-    recommendationBuilds.set(day, pending);
-  }
-  return recommendationBuilds.get(day);
 }
 
 function json(res, status, payload, extraHeaders = {}) {
@@ -303,13 +289,24 @@ async function handle(req, res) {
     const user = currentUser(req);
     if (!user) return json(res, 401, { error: "登录已失效" });
     const day = chinaDay();
+    const current = parseRecommendationRow(findRecommendation.get(day));
+    if (current?.sourceNative) return json(res, 200, current);
+    const latest = parseRecommendationRow(findLatestRecommendation.get());
+    if (latest?.sourceNative) return json(res, 200, { ...latest, stale: true });
+    return json(res, 503, { error: "暂无已核实的平台热点，请完成平台授权更新" });
+  }
+
+  if (url.pathname === "/api/recommendations/platform-snapshot" && req.method === "PUT") {
+    if (!validateOrigin(req)) return json(res, 403, { error: "来源校验失败" });
+    const user = currentUser(req);
+    if (!user) return json(res, 401, { error: "登录已失效" });
+    const body = await readJson(req, 64 * 1024);
     try {
-      return json(res, 200, await getDailyRecommendations(day));
+      const snapshot = buildPlatformSnapshot({ douyin: body.douyin, xiaohongshu: body.xiaohongshu });
+      upsertRecommendation.run(snapshot.updatedAt, JSON.stringify(snapshot), Date.now());
+      return json(res, 200, { ok: true, snapshot });
     } catch (error) {
-      console.error("Daily recommendations update failed", error);
-      const latest = parseRecommendationRow(findLatestRecommendation.get());
-      if (latest) return json(res, 200, { ...latest, stale: true });
-      return json(res, 503, { error: "今日推荐暂时无法更新，请稍后再试" });
+      return json(res, 422, { error: error.message || "平台热点格式不正确" });
     }
   }
 

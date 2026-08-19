@@ -818,3 +818,4 @@ input { font-family: inherit; }
 }
 .hot-signal-link { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
 .hot-signal-link:hover { color: var(--ink-1); }
+.hot-signal-metric { color: var(--up); font-weight: 600; }
