@@ -1,6 +1,6 @@
 /* ============================================================
-   桃子工作台数据层 — Mock 主数据 + 本地增量
-   所有视图只访问 window.YOYO.data.*，第二阶段替换为 API 适配层。
+   桃子工作台数据层 — 空白初始数据 + 云端同步
+   localStorage 作为当前设备快取缓存，线上账号的业务数据以云端为准。
    ============================================================ */
 window.YOYO = window.YOYO || {};
 
@@ -15,226 +15,235 @@ window.YOYO = window.YOYO || {};
       } catch (e) { return fallback; }
     },
     set: function (key, val) {
-      try { localStorage.setItem("yoyo_" + key, JSON.stringify(val)); } catch (e) {}
+      try {
+        var storageKey = "yoyo_" + key;
+        localStorage.setItem(storageKey, JSON.stringify(val));
+        if (YOYO.cloud) YOYO.cloud.saveKey(storageKey, val);
+      } catch (e) {}
+    },
+    remove: function (key) {
+      try {
+        var storageKey = "yoyo_" + key;
+        localStorage.removeItem(storageKey);
+        if (YOYO.cloud) YOYO.cloud.saveKey(storageKey, null);
+      } catch (e) {}
     }
   };
 
-  /* ---------- 今日推荐话题 ---------- */
-  var topics = [
-    {
-      id: "t1", title: "Claude Code 推出子代理并行工作流，独立开发者效率翻倍",
-      summary: "多个 AI 子代理并行处理任务成为新范式，单人开发者可以像带团队一样调度 AI 协作。",
-      source: "GitHub Trending", time: "2 小时前", heat: "12.4K", trend: "up",
-      tags: ["AI Coding", "Agent"], status: "watching",
-      platforms: ["小红书", "公众号"], format: "图文教程", angle: "亲测：一个人如何用 3 个 AI 代理并行做一个项目",
-      scores: { heat: 82, value: 90, match: 94, freshness: 88, difficulty: 42 }, stars: 5,
-      myNote: "和我「一人公司」系列强相关，可以做实测。", aiOpinion: "窗口期约 3 天，建议优先。"
-    },
-    {
-      id: "t2", title: "「一人公司」工具栈 2026 版：从创作到收款的全流程",
-      summary: "海外创作者整理出最新 solo business 工具清单，其中 AI 自动化占比首次超过 60%。",
-      source: "Product Hunt", time: "5 小时前", heat: "8.1K", trend: "up",
-      tags: ["工具", "效率"], status: "spark",
-      platforms: ["公众号", "小红书"], format: "清单长文", angle: "国内替代版：我的一人公司工具栈实测",
-      scores: { heat: 75, value: 85, match: 88, freshness: 72, difficulty: 30 }, stars: 4,
-      myNote: "", aiOpinion: "清单类收藏率高，适合做系列开篇。"
-    },
-    {
-      id: "t3", title: "本地大模型运行成本再降 40%，个人知识库迎来爆发点",
-      summary: "量化技术 + 端侧推理优化，让消费级设备跑 70B 模型成为日常，隐私优先的知识管理方案火了。",
-      source: "X / 科技媒体", time: "昨天", heat: "21.7K", trend: "up",
-      tags: ["AI", "知识管理"], status: "ready",
-      platforms: ["抖音", "B站"], format: "口播短视频", angle: "演示：断网状态下我的 AI 知识库问答",
-      scores: { heat: 88, value: 82, match: 90, freshness: 80, difficulty: 58 }, stars: 5,
-      myNote: "需要准备录屏素材。", aiOpinion: "演示类内容完播率高，注意前 3 秒钩子。"
-    },
-    {
-      id: "t4", title: "Cursor vs Claude Code vs Windsurf：AI 编程工具横评又更新了",
-      summary: "三大工具同一天发新版，社区实测对比帖登上热榜，「哪个最适合非程序员」成为热议角度。",
-      source: "公众号 / X", time: "昨天", heat: "9.6K", trend: "flat",
-      tags: ["AI Coding", "工具"], status: "creating",
-      platforms: ["小红书", "视频号"], format: "对比测评", angle: "非程序员视角：写内容工具链该选谁",
-      scores: { heat: 78, value: 74, match: 85, freshness: 66, difficulty: 50 }, stars: 4,
-      myNote: "", aiOpinion: "横评类同质化严重，差异化角度是关键。"
-    },
-    {
-      id: "t5", title: "AI 生成的「小黑人线稿插画」成为个人 IP 配图新趋势",
-      summary: "极简黑白线稿 + 概念可视化的风格在创作者圈层流行，统一视觉风格成为账号识别度利器。",
-      source: "小红书", time: "2 天前", heat: "6.3K", trend: "up",
-      tags: ["个人实践", "AI"], status: "published",
-      platforms: ["小红书"], format: "图文笔记", angle: "教程：3 分钟生成一套风格统一的个人 IP 配图",
-      scores: { heat: 65, value: 80, match: 96, freshness: 74, difficulty: 25 }, stars: 4,
-      myNote: "我已在用，可以出教程。", aiOpinion: "与你账号匹配度最高的一条。"
-    },
-    {
-      id: "t6", title: "Obsidian + AI 插件生态盘点：第二大脑进入自动整理时代",
-      summary: "AI 自动打标签、自动关联笔记的工作流成熟，「无整理知识库」理念引发大量讨论。",
-      source: "RSS / 社区", time: "3 天前", heat: "4.8K", trend: "down",
-      tags: ["知识管理", "效率"], status: "hold",
-      platforms: ["公众号", "B站"], format: "深度长文", angle: "我的自动化知识库流水线完整搭建过程",
-      scores: { heat: 58, value: 86, match: 82, freshness: 55, difficulty: 48 }, stars: 3,
-      myNote: "", aiOpinion: "热度回落，可放入长期选题池。"
-    }
-  ];
+  /* 业务模块默认保持为空，避免把展示内容误认为真实数据。 */
+  var topics = [];
+  var contents = LS.get("contents", []);
+  var publishMasters = [];
+  var assets = [];
+  var clients = LS.get("clients", []);
+  var projects = [];
+  var knowledge = [];
+  var titleBank = [];
+  var tasks = LS.get("tasks", []);
+  var followClients = clients.filter(function (client) { return client.followAt; });
+  var upcoming = LS.get("upcoming", []);
+  var aiInsights = [];
 
-  /* ---------- 内容（母稿，含平台版本与数据） ---------- */
-  var contents = [
-    { id: "ct1", title: "我用 3 个 AI 代理，一个人做完了过去一个团队的活", platform: "小红书", status: "published", date: "2026-08-06", format: "图文", topicId: "t1", grade: "S",
-      metrics: { views: 42800, likes: 3102, comments: 486, saves: 1024, fans: 386 } },
-    { id: "ct2", title: "2026 一人公司工具栈：从创作到收款我只用这 7 个", platform: "公众号", status: "published", date: "2026-08-04", format: "长文", topicId: "t2", grade: "A",
-      metrics: { views: 18600, likes: 892, comments: 156, saves: 640, fans: 152 } },
-    { id: "ct3", title: "断网也能用的 AI 知识库，我把 70B 模型装进了笔记本", platform: "抖音", status: "published", date: "2026-08-02", format: "短视频", topicId: "t3", grade: "A",
-      metrics: { views: 25400, likes: 2105, comments: 342, saves: 512, fans: 268 } },
-    { id: "ct4", title: "AI 编程工具怎么选？非程序员的真实使用对比", platform: "B站", status: "published", date: "2026-07-30", format: "中视频", topicId: "t4", grade: "B",
-      metrics: { views: 12300, likes: 764, comments: 203, saves: 298, fans: 95 } },
-    { id: "ct5", title: "3 分钟生成一套风格统一的个人 IP 配图（附提示词）", platform: "小红书", status: "published", date: "2026-07-27", format: "图文", topicId: "t5", grade: "S",
-      metrics: { views: 38200, likes: 2876, comments: 398, saves: 1876, fans: 342 } },
-    { id: "ct6", title: "我的自动化知识库流水线：Obsidian + AI 全自动整理", platform: "公众号", status: "published", date: "2026-07-24", format: "长文", topicId: "t6", grade: "B",
-      metrics: { views: 9800, likes: 432, comments: 88, saves: 356, fans: 64 } },
-    { id: "ct7", title: "小黑人线稿插画提示词大全：50 个场景直接抄", platform: "小红书", status: "published", date: "2026-07-21", format: "图文", topicId: "t5", grade: "A",
-      metrics: { views: 21500, likes: 1654, comments: 234, saves: 1204, fans: 187 } },
-    { id: "ct8", title: "一个人做自媒体：我的 AI 内容生产线全貌", platform: "视频号", status: "published", date: "2026-07-18", format: "短视频", topicId: "t2", grade: "C",
-      metrics: { views: 5600, likes: 289, comments: 45, saves: 102, fans: 28 } },
-    { id: "ct9", title: "「AI 代理并行」实测：3 个 Claude 同时帮我干活", platform: "小红书", status: "scheduled", date: "2026-08-10", format: "图文", topicId: "t1", grade: "",
-      metrics: null, assetsReady: 80 },
-    { id: "ct10", title: "一人公司工具栈·国内平替版（公众号首发）", platform: "公众号", status: "scheduled", date: "2026-08-12", format: "长文", topicId: "t2", grade: "",
-      metrics: null, assetsReady: 60 },
-    { id: "ct11", title: "本地大模型知识库搭建全流程（口播稿收尾中）", platform: "抖音", status: "draft", date: "2026-08-13", format: "短视频", topicId: "t3", grade: "",
-      metrics: null, assetsReady: 40 },
-    { id: "ct12", title: "AI 编程工具横评：内容创作者该选哪一个", platform: "视频号", status: "ready", date: "2026-08-15", format: "短视频", topicId: "t4", grade: "",
-      metrics: null, assetsReady: 90 }
-  ];
+  /*
+   * AI 行业内容选题榜：人工维护的公开趋势整理，不冒充平台官方实时榜。
+   * updatedAt/source 会直接显示在首页，便于判断时效和数据边界。
+   */
+  var aiHotTopics = {
+    updatedAt: "2026-08-12",
+    source: "公开趋势与行业动态人工整理",
+    douyin: [
+      { id: "dy-ai-01", title: "普通人第一次用 AI Agent 完成一天工作", angle: "用真实任务做前后对比，展示节省了哪些步骤" },
+      { id: "dy-ai-02", title: "不会写代码，也能做出自己的 AI 小工具吗", angle: "全程录屏，用一个最小成品回答问题" },
+      { id: "dy-ai-03", title: "AI 自动做 PPT 到底能不能直接交付", angle: "同一份需求实测生成、修改与最终效果" },
+      { id: "dy-ai-04", title: "我把重复工作交给 AI 后，真正省下了什么", angle: "拆解一个可复用的自动化工作流" },
+      { id: "dy-ai-05", title: "AI 数字人与真人出镜，效果差在哪里", angle: "同文案双版本对比停留、信任与制作成本" },
+      { id: "dy-ai-06", title: "国产大模型做中文内容，哪一步最实用", angle: "围绕选题、写稿、改稿三个环节现场测试" },
+      { id: "dy-ai-07", title: "AI 搜索能替代传统搜索吗", angle: "用同一个现实问题对比答案、来源与核验成本" },
+      { id: "dy-ai-08", title: "一张照片如何变成短视频素材", angle: "完整展示生成、修正和剪辑衔接过程" },
+      { id: "dy-ai-09", title: "AI 生成内容最容易露馅的 3 个地方", angle: "用失败案例讲人味、事实和审美检查" },
+      { id: "dy-ai-10", title: "2026 年普通人该学哪一种 AI 能力", angle: "从真实项目出发，给出可执行的能力路线" }
+    ],
+    xiaohongshu: [
+      { id: "xhs-ai-01", title: "我的 AI 工作台：首页只留真正会用的功能", angle: "用改造前后截图说明减法设计和使用路径" },
+      { id: "xhs-ai-02", title: "零基础做 AI 项目的完整复盘模板", angle: "分享目标、过程、证据、问题和下一步模板" },
+      { id: "xhs-ai-03", title: "我常用的 AI 提示词不是一句话，而是一套流程", angle: "公开输入、确认、执行、验收四段式结构" },
+      { id: "xhs-ai-04", title: "AI 帮我整理知识库，但这 3 类内容绝不能自动改", angle: "强调原文、隐私和待核实信息的安全边界" },
+      { id: "xhs-ai-05", title: "非程序员也能看懂的 AI Agent 入门图", angle: "用生活化角色解释目标、工具、记忆和检查" },
+      { id: "xhs-ai-06", title: "用 AI 做自媒体，一条内容的真实成本是多少", angle: "拆分选题、脚本、视觉、剪辑和复盘时间" },
+      { id: "xhs-ai-07", title: "5 个看起来很强、实际不能交付的 AI 结果", angle: "用可验证证据区分演示、原型与真正完成" },
+      { id: "xhs-ai-08", title: "AI 图片如何保持同一个人物和画风", angle: "展示参考图、约束词、局部修改和一致性检查" },
+      { id: "xhs-ai-09", title: "我的第一套 AI 自动化：从想法到发布清单", angle: "以可复制清单展示每个环节和人工确认点" },
+      { id: "xhs-ai-10", title: "转行学 AI，不要先囤课，先做这个最小项目", angle: "给出 7 天可完成且能展示的作品路线" }
+    ]
+  };
 
-  /* ---------- 发布中心：母稿 → 平台版本 ---------- */
-  var publishMasters = [
-    {
-      id: "pm1", title: "「AI 代理并行」实测", coverTag: "小红书风",
-      versions: [
-        { platform: "小红书", status: "scheduled", time: "明天 12:00", title: "我用 3 个 AI 代理，一个人做完一个团队的活", url: "" },
-        { platform: "抖音", status: "draft", time: "待定", title: "3 个 AI 同时帮我干活是什么体验", url: "" },
-        { platform: "公众号", status: "draft", time: "待定", title: "子代理并行工作流实测报告", url: "" }
-      ]
-    },
-    {
-      id: "pm2", title: "小黑人线稿插画教程", coverTag: "教程",
-      versions: [
-        { platform: "小红书", status: "published", time: "07-27 已发布", title: "3 分钟生成一套风格统一的个人 IP 配图", url: "xhs.link/mock1" },
-        { platform: "视频号", status: "review", time: "复盘排期中", title: "个人 IP 配图教程", url: "" }
-      ]
-    }
-  ];
-
-  /* ---------- 素材库 ---------- */
-  var assets = [
-    { id: "a1", type: "截图", title: "Claude Code 子代理界面截图", tags: ["AI Coding", "实测"], fav: true, date: "08-08", note: "教程主图" },
-    { id: "a2", type: "网站", title: "Product Hunt 一人公司工具帖", tags: ["工具", "参考"], fav: false, date: "08-08", note: "" },
-    { id: "a3", type: "图片", title: "小黑人线稿·电脑工作场景", tags: ["IP 配图", "线稿"], fav: true, date: "08-07", note: "封面候选" },
-    { id: "a4", type: "GitHub", title: " trending: agent-parallel-demo", tags: ["Agent", "开源"], fav: false, date: "08-07", note: "" },
-    { id: "a5", type: "视频", title: "本地 70B 模型问答录屏", tags: ["知识管理", "演示"], fav: true, date: "08-06", note: "口播素材" },
-    { id: "a6", type: "文章", title: "海外 solo business 报告 2026", tags: ["行业观察"], fav: false, date: "08-05", note: "" },
-    { id: "a7", type: "数据", title: "近30天收藏率对比表", tags: ["复盘"], fav: false, date: "08-04", note: "教程型 2.3x" },
-    { id: "a8", type: "BGM", title: "轻快 Lo-Fi（无版权）", tags: ["口播"], fav: false, date: "08-03", note: "" },
-    { id: "a9", type: "封面参考", title: "小红书爆款封面拆解 10 张", tags: ["封面"], fav: true, date: "08-02", note: "" },
-    { id: "a10", type: "案例", title: "「数字+反差」标题案例集", tags: ["标题"], fav: false, date: "08-01", note: "" }
-  ];
-
-  /* ---------- 客户 ---------- */
-  var clients = [
-    { id: "c1", name: "林一", company: "某 SaaS 公司", project: "AI 工具推广软广", contact: "微信", stage: "方案中", price: "¥8,000", lastTouch: "方案已发 3 天", nextAction: "今天跟进回复", followAt: "今天" },
-    { id: "c2", name: "Carol", company: "知识付费课程", project: "课程分销合作", contact: "微信", stage: "沟通中", price: "¥12,000", lastTouch: "昨天语音 20 分钟", nextAction: "确认 8 月档期与报价", followAt: "今天" },
-    { id: "c3", name: "阿凯", company: "AI 硬件初创", project: "新品体验视频", contact: "邮箱", stage: "潜在客户", price: "待谈", lastTouch: "对方主动私信", nextAction: "回复并约电话", followAt: "明天" },
-    { id: "c4", name: "Momo", company: "效率工具 App", project: "季度内容合作", contact: "微信", stage: "合作中", price: "¥20,000/季", lastTouch: "周报已提交", nextAction: "下周提交月度数据", followAt: "周五" }
-  ];
-
-  /* ---------- 项目 ---------- */
-  var projects = [
-    { id: "p1", name: "桃子工作台", type: "个人工具", goal: "替代 5 个零散工具，一个页面管理创作全流程", status: "进行中", progress: 35, nextAction: "完成 Media Center", deadline: "08-31", color: "#F04E45" },
-    { id: "p2", name: "「一人公司」内容系列", type: "内容项目", goal: "10 篇系列内容，建立赛道心智", status: "进行中", progress: 60, nextAction: "发布第 6 篇", deadline: "08-20", color: "#FFC93C" },
-    { id: "p3", name: "小黑人 IP 形象体系", type: "AI 实验", goal: "固定提示词模板 + 50 场景图库", status: "进行中", progress: 80, nextAction: "整理提示词到知识库", deadline: "08-15", color: "#7FC4E8" },
-    { id: "p4", name: "效率工具 App 季度合作", type: "客户项目", goal: "季度 12 条定制内容", status: "进行中", progress: 45, nextAction: "提交 8 月排期表", deadline: "10-31", color: "#B5D951" }
-  ];
-
-  /* ---------- 知识库 ---------- */
-  var knowledge = [
-    { id: "k1", title: "爆款标题的 4 个特征（复盘沉淀）", source: "方法库", updated: "08-07", tags: ["标题", "复盘"], summary: "数字具体化、反差对比、身份代入、结果前置——来自 S 级内容的共性。" },
-    { id: "k2", title: "小黑人线稿提示词模板", source: "本地笔记", updated: "08-06", tags: ["AI", "配图"], summary: "flat hand-drawn, minimal line art, warm healing style…含 5 个变体。" },
-    { id: "k3", title: "小红书图文结构：清单体", source: "方法库", updated: "08-05", tags: ["结构", "小红书"], summary: "封面数字清单 → 痛点共鸣 → 逐条展开 → 行动指令。" },
-    { id: "k4", title: "口播稿节奏：90 秒结构", source: "Obsidian", updated: "08-03", tags: ["口播", "短视频"], summary: "0-3s 钩子 / 3-15s 冲突 / 15-70s 主体 / 70-90s 行动。" },
-    { id: "k5", title: "AI 工具赛道信源清单", source: "RSS 收藏", updated: "08-01", tags: ["信源"], summary: "GitHub Trending、PH、5 个公众号、3 个 X 账号。" }
-  ];
-
-  /* ---------- 标题库 ---------- */
-  var titleBank = [
-    { id: "tt1", text: "我用 3 个 AI 代理，一个人做完了过去一个团队的活", platform: "小红书", style: "结果型", scores: { click: 92, density: 85, emotion: 78, match: 95 }, perf: "42.8K 播放" },
-    { id: "tt2", text: "别再乱收藏了，AI 现在自动帮你整理知识库", platform: "抖音", style: "冲突型", scores: { click: 88, density: 72, emotion: 84, match: 86 }, perf: "25.4K 播放" },
-    { id: "tt3", text: "3 分钟生成一套风格统一的个人 IP 配图（附提示词）", platform: "小红书", style: "教程型", scores: { click: 85, density: 90, emotion: 60, match: 92 }, perf: "38.2K 播放" },
-    { id: "tt4", text: "2026 一人公司工具栈：从创作到收款我只用这 7 个", platform: "公众号", style: "信息差型", scores: { click: 80, density: 88, emotion: 55, match: 90 }, perf: "18.6K 阅读" }
-  ];
-
-  /* ---------- 内容流水线 ---------- */
   var pipeline = [
-    { key: "spark",     label: "灵感",   count: 12, color: "#F7A8C4" },
-    { key: "ready",     label: "待创作", count: 5,  color: "#FFC93C" },
-    { key: "creating",  label: "创作中", count: 3,  color: "#F89C3C" },
-    { key: "scheduled", label: "待发布", count: 4,  color: "#7FC4E8" },
-    { key: "published", label: "已发布", count: 18, color: "#B5D951" }
+    { key: "spark", label: "灵感", count: 0, color: "#F7A8C4" },
+    { key: "ready", label: "待创作", count: 0, color: "#FFC93C" },
+    { key: "creating", label: "创作中", count: 0, color: "#F89C3C" },
+    { key: "scheduled", label: "待发布", count: 0, color: "#7FC4E8" },
+    { key: "published", label: "已发布", count: 0, color: "#B5D951" }
   ];
 
-  /* ---------- 今日重点 ---------- */
-  var tasks = [
-    { id: "k1", title: "给「AI 代理并行」口播稿收尾", due: "今天 16:00", overdue: false },
-    { id: "k2", title: "回复品牌方合作报价", due: "昨天", overdue: true },
-    { id: "k3", title: "整理本周爆款标题到标题库", due: "今天", overdue: false }
-  ];
-
-  var followClients = [
-    { id: "c1", name: "林一 · 某 SaaS 市场负责人", note: "方案已发 3 天未回，今天跟进", stage: "方案中" },
-    { id: "c2", name: "Carol · 知识付费课程", note: "确认 8 月档期与报价", stage: "沟通中" }
-  ];
-
-  var upcoming = [
-    { title: "「AI 工具栈」视频排期发布", when: "明天 12:00" },
-    { title: "8 月选题会（自己）", when: "周一 10:00" },
-    { title: "公众号周更截止", when: "周四" }
-  ];
-
-  /* ---------- 最近数据 ---------- */
   var stats = {
-    weekPosts: 5,
-    views: "128.4K", viewsDelta: "+18%",
-    engagement: "8,412", engagementDelta: "+9%",
-    saves: "2,138", savesDelta: "+22%",
-    fans: "+1,204", fansDelta: "+15%",
-    spark: [42, 55, 48, 70, 66, 92, 88],
-    bars: [32, 45, 28, 62, 50, 78, 88],
-    best: {
-      title: "我用 3 个 AI 代理，一个人做完了过去一个团队的活",
-      platform: "小红书",
-      views: "42.8K", saves: "1,024", fans: "+386"
-    }
+    weekPosts: 0,
+    views: "0", viewsDelta: "",
+    engagement: "0", engagementDelta: "",
+    saves: "0", savesDelta: "",
+    fans: "0", fansDelta: "",
+    spark: [0, 0, 0, 0, 0, 0, 0],
+    bars: [0, 0, 0, 0, 0, 0, 0],
+    best: null
   };
 
-  /* ---------- 数据中心 AI 分析 ---------- */
-  var aiInsights = [
-    { title: "本周表现最好", text: "「AI 代理并行」小红书图文：42.8K 播放、收藏率 2.4%。开头 3 秒留存 78%，「数字+反差」标题贡献最大。", tone: "sage" },
-    { title: "表现最差", text: "「AI 内容生产线全貌」视频号：5.6K 播放、完播 31%。开头铺垫过长，主题偏自嗨。", tone: "apricot" },
-    { title: "增长最快主题", text: "「个人 IP 视觉」相关两条内容涨粉 529，占总涨粉 44%。值得做成固定栏目。", tone: "pink" },
-    { title: "下周建议", text: "继续做「教程型+提示词」组合；暂停全景式自嗨选题；公众号长文收藏率稳，保持周更。", tone: "yellow" }
-  ];
+  function persistBusinessData() {
+    LS.set("contents", contents);
+    LS.set("clients", clients);
+    LS.set("tasks", tasks);
+    LS.set("upcoming", upcoming);
+  }
 
-  /* ---------- localStorage 增量 ---------- */
+  function replaceList(target, next) {
+    target.splice.apply(target, [0, target.length].concat(next));
+  }
+
+  function updateHomeSection(section, rows) {
+    if (section === "tasks") replaceList(tasks, rows.map(function (row, i) {
+      return { id: "task" + Date.now() + i, title: row.title, due: row.due || "", overdue: false };
+    }));
+    if (section === "upcoming") replaceList(upcoming, rows.map(function (row) {
+      return { title: row.title, when: row.when || "" };
+    }));
+    if (section === "clients") {
+      replaceList(clients, rows.map(function (row, i) {
+        return { id: "client" + Date.now() + i, name: row.name, company: "", project: "", contact: "", stage: row.stage || "待跟进", price: "", lastTouch: "", nextAction: row.note || "", followAt: row.when || "" };
+      }));
+      replaceList(followClients, clients.filter(function (client) { return client.followAt || client.nextAction; }));
+    }
+    if (section === "creating" || section === "scheduled") {
+      var statuses = section === "creating" ? ["draft", "ready"] : ["scheduled"];
+      for (var i = contents.length - 1; i >= 0; i--) {
+        if (statuses.indexOf(contents[i].status) > -1 && !contents[i].metrics) contents.splice(i, 1);
+      }
+      rows.forEach(function (row, i) {
+        contents.push({ id: "content" + Date.now() + i, title: row.title, platform: row.platform || "未设置", status: section === "creating" ? "draft" : "scheduled", date: row.date || new Date().toISOString().slice(0, 10), format: "", grade: "", metrics: null, assetsReady: 0 });
+      });
+    }
+    persistBusinessData();
+    refreshStats();
+  }
+
+  function refreshStats() {
+    var published = contents.filter(function (content) { return content.metrics; });
+    var totals = published.reduce(function (sum, content) {
+      sum.views += Number(content.metrics.views) || 0;
+      sum.engagement += (Number(content.metrics.likes) || 0) + (Number(content.metrics.comments) || 0);
+      sum.saves += Number(content.metrics.saves) || 0;
+      sum.fans += Number(content.metrics.fans) || 0;
+      return sum;
+    }, { views: 0, engagement: 0, saves: 0, fans: 0 });
+    stats.weekPosts = published.length;
+    stats.views = String(totals.views);
+    stats.engagement = String(totals.engagement);
+    stats.saves = String(totals.saves);
+    stats.fans = String(totals.fans);
+    var best = published.slice().sort(function (a, b) { return b.metrics.views - a.metrics.views; })[0];
+    stats.best = best ? { id: best.id, title: best.title, platform: best.platform, views: String(best.metrics.views), saves: String(best.metrics.saves || 0), fans: String(best.metrics.fans || 0) } : null;
+    pipeline.forEach(function (item) {
+      item.count = item.key === "spark" ? 0 : contents.filter(function (content) {
+        if (item.key === "creating") return content.status === "draft" || content.status === "ready";
+        return content.status === item.key;
+      }).length;
+    });
+  }
+
+  function importReviewRows(rows) {
+    rows.forEach(function (row, i) {
+      contents.push({
+        id: "review" + Date.now() + i,
+        title: row.title || row["内容标题"] || "未命名内容",
+        platform: row.platform || row["平台"] || "未设置",
+        status: "published",
+        date: row.date || row["发布日期"] || new Date().toISOString().slice(0, 10),
+        format: row.format || row["形式"] || "",
+        grade: row.grade || row["等级"] || "",
+        metrics: {
+          views: Number(row.views || row["播放"] || 0), likes: Number(row.likes || row["点赞"] || 0),
+          comments: Number(row.comments || row["评论"] || 0), saves: Number(row.saves || row["收藏"] || 0),
+          fans: Number(row.fans || row["涨粉"] || 0)
+        }
+      });
+    });
+    persistBusinessData();
+    refreshStats();
+    return rows.length;
+  }
+
+  refreshStats();
+
   function getExtraTopics() { return LS.get("topics_extra", []); }
   function getIgnored() { return LS.get("ignored_topics", []); }
   function getCaptures() { return LS.get("captures", []); }
+  function firstDraftLine(value, maxLength) {
+    var lines = String(value || "").split(/\n+/).map(function (line) { return line.trim(); }).filter(Boolean);
+    return (lines[0] || "").slice(0, maxLength || 120);
+  }
+  function normalizeStudioDraft(draft) {
+    var next = Object.assign({}, draft || {});
+    var body = String(next.body || "").trim();
+    var topic = String(next.topic || "").trim();
+    var title = String(next.title || "").trim();
+    var bodyCompact = body.replace(/\s+/g, " ");
+    var topicCompact = topic.replace(/\s+/g, " ");
+    if (body && topic && (topicCompact === bodyCompact || (topic.length > 240 && bodyCompact.indexOf(topicCompact.slice(0, 180)) === 0))) {
+      next.topic = firstDraftLine(body, 120) || title || "未命名选题";
+    }
+    if (body && title && title.replace(/\s+/g, " ") === bodyCompact) {
+      next.title = (String(next.topic || "").length <= 120 ? String(next.topic || "") : "") || firstDraftLine(body, 80) || "未命名初稿";
+    }
+    return next;
+  }
+  function getStudioDrafts() {
+    var drafts = LS.get("studio_drafts", []);
+    var normalized = drafts.map(normalizeStudioDraft);
+    var changed = JSON.stringify(drafts) !== JSON.stringify(normalized);
+    if (changed) LS.set("studio_drafts", normalized);
+    return normalized;
+  }
+  function getStudioWorkingDraft() { return LS.get("studio_working_draft", null); }
   function getMyTitles() { return LS.get("titles", []); }
   function getSettings() { return LS.get("settings", { name: "桃子" }); }
   function getGhCache() { return LS.get("gh_cache", null); }
   function setGhCache(list) { LS.set("gh_cache", { list: list, ts: Date.now() }); }
+  function getHotCache() { return LS.get("hot_cache", null); }
+  function setAiHotTopics(payload) {
+    if (!payload || !Array.isArray(payload.douyin) || !Array.isArray(payload.xiaohongshu) ||
+        payload.douyin.length !== 10 || payload.xiaohongshu.length !== 10) return false;
+    Object.keys(aiHotTopics).forEach(function (key) { delete aiHotTopics[key]; });
+    Object.assign(aiHotTopics, payload);
+    LS.set("hot_cache", payload);
+    return true;
+  }
+
+  function extractSharedUrl(value) {
+    var text = String(value || "").trim();
+    if (!text) return "";
+    var match = text.match(/https?:\/\/[^\s<>"'，。；！？、）】》,;!?)}\]]+/i);
+    if (!match) match = text.match(/(?:v\.douyin\.com|xhslink\.com|b23\.tv)\/[^\s<>"'，。；！？、）】》,;!?)}\]]+/i);
+    if (!match) return "";
+    var candidate = match[0].replace(/[),.;!?，。；！？）】》]+$/g, "");
+    if (!/^https?:\/\//i.test(candidate)) candidate = "https://" + candidate;
+    try {
+      var parsed = new URL(candidate);
+      return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : "";
+    } catch (error) { return ""; }
+  }
 
   function saveTopic(topic) {
     var extra = getExtraTopics();
-    if (extra.some(function (x) { return x.id === topic.id; })) return;
-    extra.unshift({
+    var existing = extra.filter(function (x) { return x.id === topic.id || (x.title || "").trim() === (topic.title || "").trim(); })[0];
+    if (existing) return existing;
+    var next = {
       id: topic.id,
       title: topic.title,
       source: topic.source || "手动添加",
@@ -248,8 +257,10 @@ window.YOYO = window.YOYO || {};
       starsN: topic.analysis ? topic.analysis.starsN : (topic.stars || 0),
       status: "watching",
       savedAt: Date.now()
-    });
+    };
+    extra.unshift(next);
     LS.set("topics_extra", extra);
+    return next;
   }
   function removeTopic(id) {
     LS.set("topics_extra", getExtraTopics().filter(function (x) { return x.id !== id; }));
@@ -258,39 +269,167 @@ window.YOYO = window.YOYO || {};
     return getExtraTopics().some(function (x) { return x.id === id; });
   }
   function ignoreTopic(id) {
-    var ig = getIgnored();
-    if (ig.indexOf(id) === -1) ig.push(id);
-    LS.set("ignored_topics", ig);
+    var ignored = getIgnored();
+    if (ignored.indexOf(id) === -1) ignored.push(id);
+    LS.set("ignored_topics", ignored);
   }
-  function saveCapture(text, routedTo) {
-    var caps = getCaptures();
-    caps.unshift({ id: "cap" + Date.now(), text: text, routedTo: routedTo, createdAt: Date.now() });
-    LS.set("captures", caps);
+  function saveCapture(input, routedTo, imageData) {
+    var captures = getCaptures();
+    var now = Date.now();
+    var source = typeof input === "string" ? { text: input, title: input } : (input || {});
+    var next = {
+      id: source.id || "cap" + now,
+      text: source.text || source.content || source.title || "",
+      title: source.title || source.text || "未命名记录",
+      type: source.type || (routedTo === "asset" ? "网站" : "灵感"),
+      platform: source.platform || "",
+      url: source.url || "",
+      content: source.content || "",
+      author: source.author || "",
+      publisher: source.publisher || "",
+      publishedAt: source.publishedAt || "",
+      description: source.description || "",
+      coverImage: source.coverImage || "",
+      note: source.note || "",
+      tags: Array.isArray(source.tags) ? source.tags : [],
+      routedTo: source.routedTo || routedTo || "idea",
+      fav: !!source.fav,
+      createdAt: now,
+      updatedAt: now
+    };
+    if (imageData) {
+      next.imageKey = "capture_image_" + next.id;
+      LS.set(next.imageKey, imageData);
+    }
+    captures.unshift(next);
+    LS.set("captures", captures);
+    return next;
   }
-  function saveTitle(t) {
-    var arr = getMyTitles();
-    arr.unshift(t);
-    LS.set("titles", arr);
+  function getCaptureImage(imageKey) { return imageKey ? LS.get(imageKey, "") : ""; }
+  function saveStudioDraft(draft) {
+    var drafts = getStudioDrafts();
+    var now = Date.now();
+    var next = normalizeStudioDraft({
+      id: draft.id || "draft" + now,
+      topicId: draft.topicId || "",
+      topic: draft.topic || "",
+      title: draft.title || "",
+      body: draft.body || "",
+      douyin: draft.douyin || "",
+      xiaohongshu: draft.xiaohongshu || "",
+      wechatChannels: draft.wechatChannels || "",
+      coverTitle: draft.coverTitle || "",
+      coverSubtitle: draft.coverSubtitle || "",
+      coverBrief: draft.coverBrief || "",
+      updatedAt: now
+    });
+    var index = drafts.findIndex(function (item) { return item.id === next.id; });
+    if (index > -1) drafts[index] = next;
+    else drafts.unshift(next);
+    LS.set("studio_drafts", drafts);
+    var linkedContent = getContentByDraftId(next.id);
+    if (linkedContent) {
+      linkedContent.topicId = next.topicId;
+      linkedContent.title = next.title || next.topic || "未命名内容";
+      linkedContent.updatedAt = now;
+      persistBusinessData();
+      refreshStats();
+    }
+    return next;
   }
-  function saveSettings(s) { LS.set("settings", s); }
+  function getContentByDraftId(draftId) {
+    return contents.filter(function (content) { return content.draftId === draftId; })[0] || null;
+  }
+  function promoteDraftToContent(draftId) {
+    var draft = getStudioDrafts().filter(function (item) { return item.id === draftId; })[0];
+    if (!draft) return null;
+    var existing = getContentByDraftId(draftId);
+    var now = Date.now();
+    if (existing) {
+      existing.topicId = draft.topicId || "";
+      existing.title = draft.title || draft.topic || "未命名内容";
+      existing.updatedAt = now;
+    } else {
+      existing = {
+        id: "content" + now,
+        topicId: draft.topicId || "",
+        draftId: draft.id,
+        title: draft.title || draft.topic || "未命名内容",
+        platform: "多平台",
+        status: "draft",
+        date: new Date().toISOString().slice(0, 10),
+        format: "",
+        grade: "",
+        metrics: null,
+        assetsReady: 0,
+        createdAt: now,
+        updatedAt: now
+      };
+      contents.unshift(existing);
+    }
+    persistBusinessData();
+    refreshStats();
+    return existing;
+  }
+  function updateContentStatus(contentId, status, patch) {
+    var allowed = {
+      draft: ["ready"],
+      ready: ["draft", "scheduled"],
+      scheduled: ["ready", "published"],
+      published: []
+    };
+    var content = contents.filter(function (item) { return item.id === contentId; })[0];
+    if (!content || !allowed[content.status] || allowed[content.status].indexOf(status) === -1) return null;
+    Object.keys(patch || {}).forEach(function (key) { content[key] = patch[key]; });
+    content.status = status;
+    content.updatedAt = Date.now();
+    if (status === "published" && !content.metrics) {
+      content.metrics = { views: 0, likes: 0, comments: 0, saves: 0, fans: 0 };
+    }
+    persistBusinessData();
+    refreshStats();
+    return content;
+  }
+  function saveContentChanges() {
+    persistBusinessData();
+    refreshStats();
+  }
+  function removeStudioDraft(id) {
+    LS.set("studio_drafts", getStudioDrafts().filter(function (draft) { return draft.id !== id; }));
+  }
+  function saveStudioWorkingDraft(draft) {
+    var copy = Object.assign({}, draft, { workingCopy: true, autosavedAt: Date.now() });
+    LS.set("studio_working_draft", copy);
+    return copy;
+  }
+  function clearStudioWorkingDraft() { LS.remove("studio_working_draft"); }
+  function saveTitle(title) {
+    var titles = getMyTitles();
+    titles.unshift(title);
+    LS.set("titles", titles);
+  }
+  function saveSettings(settings) { LS.set("settings", settings); }
   function exportAll() {
     var dump = {};
     for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
-      if (k && k.indexOf("yoyo_") === 0) dump[k] = LS.get(k.slice(5), null);
+      var key = localStorage.key(i);
+      if (key && key.indexOf("yoyo_") === 0) dump[key] = LS.get(key.slice(5), null);
     }
     return JSON.stringify(dump, null, 2);
   }
   function clearAll() {
     var keys = [];
     for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
-      if (k && k.indexOf("yoyo_") === 0) keys.push(k);
+      var key = localStorage.key(i);
+      if (key && key.indexOf("yoyo_") === 0) keys.push(key);
     }
-    keys.forEach(function (k) { localStorage.removeItem(k); });
+    keys.forEach(function (key) { localStorage.removeItem(key); });
+    if (YOYO.cloud) YOYO.cloud.clearAll().catch(function () {});
+  }
+  function syncNow() {
+    return YOYO.cloud ? YOYO.cloud.syncAll() : Promise.resolve();
   }
 
-  /* ---------- 导出 ---------- */
   YOYO.data = {
     topics: topics,
     contents: contents,
@@ -306,21 +445,39 @@ window.YOYO = window.YOYO || {};
     upcoming: upcoming,
     stats: stats,
     aiInsights: aiInsights,
+    aiHotTopics: aiHotTopics,
     getIgnored: getIgnored,
     getCaptures: getCaptures,
+    getStudioDrafts: getStudioDrafts,
+    getStudioWorkingDraft: getStudioWorkingDraft,
     getMyTitles: getMyTitles,
     getSettings: getSettings,
     getGhCache: getGhCache,
     setGhCache: setGhCache,
+    getHotCache: getHotCache,
+    setAiHotTopics: setAiHotTopics,
+    extractSharedUrl: extractSharedUrl,
     saveTopic: saveTopic,
     removeTopic: removeTopic,
     isTopicSaved: isTopicSaved,
     ignoreTopic: ignoreTopic,
     saveCapture: saveCapture,
+    getCaptureImage: getCaptureImage,
+    saveStudioDraft: saveStudioDraft,
+    getContentByDraftId: getContentByDraftId,
+    promoteDraftToContent: promoteDraftToContent,
+    updateContentStatus: updateContentStatus,
+    saveContentChanges: saveContentChanges,
+    removeStudioDraft: removeStudioDraft,
+    saveStudioWorkingDraft: saveStudioWorkingDraft,
+    clearStudioWorkingDraft: clearStudioWorkingDraft,
     saveTitle: saveTitle,
     saveSettings: saveSettings,
     exportAll: exportAll,
     clearAll: clearAll,
-    getExtraTopics: getExtraTopics
+    syncNow: syncNow,
+    getExtraTopics: getExtraTopics,
+    updateHomeSection: updateHomeSection,
+    importReviewRows: importReviewRows
   };
 })();

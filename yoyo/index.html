@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="icon" type="image/png" href="assets/icon-192.png">
-<link rel="stylesheet" href="assets/css/yoyo.css">
+<link rel="stylesheet" href="assets/css/yoyo.css?v=20260817-daily1">
 </head>
 <body>
 <div class="app" id="app">
@@ -47,7 +47,7 @@
       <div class="page-title" id="pageTitle">Today</div>
       <button class="search-box" id="openCmd">
         <span class="nav-ico" data-icon="search"></span>
-        <span class="search-ph">搜索内容、话题、客户…</span>
+        <span class="search-ph">搜索内容、话题、素材…</span>
         <kbd>⌘K</kbd>
       </button>      <button class="btn btn-primary btn-sm" id="quickAdd">
         <span class="nav-ico" data-icon="plus"></span>快速新建
@@ -56,9 +56,24 @@
         <span class="nav-ico" data-icon="bell"></span>
         <span class="dot"></span>
       </button>
-      <div class="avatar avatar-sm mascot" data-mascot></div>
+      <a class="icon-btn header-calendar" href="#/calendar" title="内容日历" aria-label="内容日历">
+        <span class="nav-ico" data-icon="calendar"></span>
+      </a>
+      <a class="icon-btn mobile-settings" href="#/settings" title="设置" aria-label="设置">
+        <span class="nav-ico" data-icon="settings"></span>
+      </a>
+      <a class="avatar avatar-sm mascot header-avatar" data-mascot href="#/settings" title="个人设置" aria-label="个人设置"></a>
     </header>
     <main class="content" id="view"></main>
+  </div>
+
+  <!-- YOYO Cheer Pet -->
+  <div class="yoyo-pet" id="yoyoPet">
+    <div class="yoyo-pet-bubble" id="yoyoPetBubble" role="status" aria-live="polite"></div>
+    <button class="yoyo-pet-btn" id="yoyoPetBtn" type="button" aria-label="点击 YOYO 给自己加油">
+      <span class="mascot yoyo-pet-image" aria-hidden="true"><img src="assets/yoyo-pet.png" alt=""></span>
+      <span class="yoyo-pet-count" id="yoyoPetCount">今日 0</span>
+    </button>
   </div>
 
   <!-- AI Side Panel -->
@@ -94,15 +109,46 @@
     </div>
   </div>
 
+  <div class="cmd-overlay" id="editOverlay">
+    <div class="cmd" style="max-width:620px">
+      <div class="cmd-input-row"><strong id="editTitle">编辑</strong><button class="icon-btn" id="editClose" style="margin-left:auto"><span class="nav-ico" data-icon="x"></span></button></div>
+      <div style="padding:18px">
+        <div class="mini-sub" id="editHelp" style="margin-bottom:8px"></div>
+        <textarea class="input" id="editText" style="min-height:210px;resize:vertical;font-size:14px"></textarea>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" id="editCancel">取消</button><button class="btn btn-primary btn-sm" id="editSave">保存修改</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cmd-overlay" id="assetOverlay">
+    <form class="cmd asset-editor" id="assetForm">
+      <div class="cmd-input-row"><strong>快速记录到素材库</strong><button type="button" class="icon-btn" id="assetClose" style="margin-left:auto"><span class="nav-ico" data-icon="x"></span></button></div>
+      <div class="asset-form-body">
+        <input type="hidden" id="assetTitle">
+        <label class="studio-field"><span>链接（选填）</span><span class="asset-url-tools"><input class="input" id="assetUrl" type="text" inputmode="url" placeholder="可直接粘贴整段抖音、小红书分享文案"><button type="button" class="btn btn-soft" id="assetParse">智能解析</button></span></label>
+        <div class="asset-parse-status" id="assetParseStatus" aria-live="polite">链接、图片、文字任选一种即可保存，平台和标题会自动识别。</div>
+        <div class="asset-preview-fields" id="assetPreviewFields" hidden>
+          <div class="asset-preview-grid">
+            <label class="studio-field"><span>作者</span><input class="input" id="assetAuthor" maxlength="160" placeholder="未提取到时可手动填写"></label>
+            <label class="studio-field"><span>来源 / 发布者</span><input class="input" id="assetPublisher" maxlength="160" placeholder="网站或账号名称"></label>
+          </div>
+          <label class="studio-field"><span>发布时间</span><input class="input" id="assetPublishedAt" maxlength="80" placeholder="未提取到时可手动填写"></label>
+          <label class="studio-field"><span>封面图片地址</span><input class="input" id="assetCoverImage" type="url" inputmode="url" placeholder="https://..."></label>
+          <div class="asset-cover-preview" id="assetCoverPreview" hidden></div>
+          <label class="studio-field"><span>摘要</span><textarea class="input" id="assetDescription" rows="3" maxlength="1200" placeholder="网页摘要"></textarea></label>
+          <label class="studio-field"><span>正文预览</span><textarea class="input" id="assetContent" rows="8" maxlength="30000" placeholder="自动提取的正文预览，也可以手动修改"></textarea></label>
+        </div>
+        <label class="studio-field"><span>图片（选填）</span><input class="input" id="assetImage" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <label class="studio-field"><span>文字内容（选填）</span><textarea class="input" id="assetTextContent" rows="4" maxlength="10000" placeholder="粘贴或输入想保存的一段文字"></textarea></label>
+        <label class="studio-field"><span>自定义标签</span><input class="input" id="assetTags" placeholder="输入任意标签，用逗号分隔，例如：AI工具, 选题参考"></label>
+        <label class="studio-field"><span>备注（选填）</span><textarea class="input" id="assetNote" rows="3" maxlength="500" placeholder="为什么记录、以后怎么用"></textarea></label>
+        <div class="asset-form-actions"><button type="button" class="btn btn-ghost" id="assetCancel">取消</button><button type="submit" class="btn btn-accent" id="assetSave">保存到素材库</button></div>
+      </div>
+    </form>
+  </div>
+
   <div class="toast-wrap" id="toastWrap"></div>
 </div>
-<script src="assets/js/data.js"></script>
-<script src="assets/js/ai.js"></script>
-<script src="assets/js/app.js"></script>
-<script>
-if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
-  navigator.serviceWorker.register("sw.js").catch(function () {});
-}
-</script>
+<script src="assets/js/cloud-sync.js?v=20260817-daily1"></script>
 </body>
 </html>

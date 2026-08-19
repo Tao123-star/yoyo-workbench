@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>登录 · 桃子工作台</title>
+<meta name="theme-color" content="#FAE6E4">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<link rel="stylesheet" href="assets/css/auth.css?v=20260814-2">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-card" aria-labelledby="authTitle">
+      <img class="auth-yoyo" src="assets/yoyo-pet.png" alt="YOYO">
+      <p class="auth-kicker">桃子工作台</p>
+      <h1 id="authTitle">个人账号</h1>
+      <p class="auth-sub" id="authSub">正在确认账号状态…</p>
+
+      <div class="auth-loading" id="authLoading" aria-live="polite">请稍候</div>
+
+      <form id="loginForm" class="auth-form" hidden>
+        <label>用户名<input id="loginUsername" name="username" autocomplete="username" required></label>
+        <label>密码<input id="loginPassword" name="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">登录工作台</button>
+      </form>
+
+      <form id="setupForm" class="auth-form" hidden>
+        <label id="setupTokenRow">一次性设置码<input id="setupToken" name="setupToken" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+        <label>创建用户名<input id="setupUsername" name="username" autocomplete="username" minlength="2" maxlength="32" required></label>
+        <label>创建密码<input id="setupPassword" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+        <label>确认密码<input id="setupPasswordAgain" name="passwordAgain" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+        <p class="auth-note">首次创建后，一次性设置码立即失效；之后不开放注册。</p>
+        <button type="submit">创建我的账号</button>
+      </form>
+
+      <p class="auth-message" id="authMessage" role="alert"></p>
+      <p class="auth-foot">账号用于保护工作台访问，工作数据已开启云端同步。</p>
+    </section>
+  </main>
+  <script src="assets/js/login.js?v=20260814-2"></script>
+</body>
+</html>
