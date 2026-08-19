@@ -115,7 +115,7 @@
 
   /* ============ GitHub Trending 实时信源 ============ */
   var GH = { list: [], ts: 0, loading: false, error: null, loaded: false };
-  var HOT = { loading: false, attempted: false, stale: false, error: "" };
+  var HOT = { loading: false, attempted: false, stale: false, error: "", lastCheckedAt: 0 };
   var initialHotCache = D.getHotCache();
   if (initialHotCache) {
     D.setAiHotTopics(initialHotCache);
@@ -133,15 +133,18 @@
     return value("year") + "-" + value("month") + "-" + value("day");
   }
 
-  function ensureDailyHotTopics() {
-    if (HOT.loading || HOT.attempted) return;
-    if (D.aiHotTopics.updatedAt === chinaToday() && !D.aiHotTopics.stale) {
+  function ensureDailyHotTopics(force) {
+    if (HOT.loading) return Promise.resolve(null);
+    if (!force && HOT.attempted) return Promise.resolve(null);
+    if (!force && D.aiHotTopics.updatedAt === chinaToday() && !D.aiHotTopics.stale) {
       HOT.attempted = true;
-      return;
+      return Promise.resolve(D.aiHotTopics);
     }
     HOT.loading = true;
     HOT.attempted = true;
-    fetch("/api/recommendations", { credentials: "same-origin", headers: { Accept: "application/json" } })
+    if (currentRoute() === "today") render();
+    var endpoint = "/api/recommendations" + (force ? "?refresh=" + Date.now() : "");
+    return fetch(endpoint, { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } })
       .then(function (response) {
         if (!response.ok) throw new Error(response.status === 401 ? "登录已失效" : "今日推荐暂时无法更新");
         return response.json();
@@ -151,12 +154,21 @@
         HOT.loading = false;
         HOT.stale = !!payload.stale;
         HOT.error = "";
+        HOT.lastCheckedAt = Date.now();
         if (currentRoute() === "today") render();
+        if (force) {
+          toast(payload.stale || payload.updatedAt !== chinaToday()
+            ? "已检查，云端暂无当天新数据，继续显示最近一次已核实内容"
+            : "热点已刷新到今日最新平台快照");
+        }
+        return payload;
       })
       .catch(function (error) {
         HOT.loading = false;
         HOT.error = error.message || "今日推荐暂时无法更新";
         if (currentRoute() === "today") render();
+        if (force) toast("刷新失败：" + HOT.error);
+        return null;
       });
   }
 
@@ -442,17 +454,19 @@
     var noteText = ghTop.length
       ? ghTop.length + " 个 GitHub 实时热点 · 更新于 " + new Date(GH.ts).toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" })
       : (GH.loading ? "正在拉取 GitHub 实时热点…" : "暂无实时推荐");
-    var hotStatus = HOT.loading ? " · 正在读取平台快照…" :
+    var hotStatus = HOT.loading ? " · 正在刷新平台快照…" :
       (HOT.stale ? " · 使用最近一次已核实平台数据" :
         (HOT.error ? " · " + HOT.error : " · 已核实平台来源"));
+    if (HOT.lastCheckedAt && !HOT.loading) hotStatus += " · 刚刚检查";
     html += '<section class="sec"><div class="sec-head"><div class="sec-title">今日内容推荐</div>' +
       '<div class="sec-note">先从 AI 行业热点选题开始</div>' +
       '<a class="sec-more" href="#/studio" data-act="open-studio-topics">查看话题库 →</a></div>' +
       '<div class="hot-board"><div class="hot-board-head"><div><div class="hot-board-title">AI 行业平台内容信号</div>' +
       '<div class="hot-board-note">' + esc(D.aiHotTopics.source) + ' · 更新于 ' + esc(D.aiHotTopics.updatedAt) + esc(hotStatus) + ' · 平台真实内容信号，非官方热榜排名</div></div>' +
-      '<div class="seg hot-platform-tabs" role="tablist" aria-label="热点平台">' +
+      '<div class="hot-board-tools"><div class="seg hot-platform-tabs" role="tablist" aria-label="热点平台">' +
       '<button class="seg-btn' + (S.hotPlatform === "douyin" ? " on" : "") + '" data-act="hot-platform" data-v="douyin" role="tab">抖音 ' + (D.aiHotTopics.douyin || []).length + ' 条</button>' +
-      '<button class="seg-btn' + (S.hotPlatform === "xiaohongshu" ? " on" : "") + '" data-act="hot-platform" data-v="xiaohongshu" role="tab">小红书 ' + (D.aiHotTopics.xiaohongshu || []).length + ' 条</button></div></div>' +
+      '<button class="seg-btn' + (S.hotPlatform === "xiaohongshu" ? " on" : "") + '" data-act="hot-platform" data-v="xiaohongshu" role="tab">小红书 ' + (D.aiHotTopics.xiaohongshu || []).length + ' 条</button></div>' +
+      '<button class="btn btn-soft btn-sm hot-refresh-btn" data-act="hot-refresh"' + (HOT.loading ? ' disabled aria-busy="true"' : '') + '>' + icon("refresh") + (HOT.loading ? '刷新中…' : '立即刷新') + '</button></div></div>' +
       '<div class="hot-topic-list">' + hotTopicRows(S.hotPlatform) + '</div></div>' +
       '<div class="sec-head home-github-head"><div class="sec-title" style="font-size:16px">GitHub 实时热点</div><div class="sec-note">' + noteText + '</div></div>' +
       '<div class="topic-grid">' + ghTop.map(ghCard).join("") + picked.map(topicCard).join("") + "</div></section>";
@@ -1570,6 +1584,7 @@
         toast("已加入话题库 · 状态：观察中");
         break;
       case "hot-platform": S.hotPlatform = v; render(); break;
+      case "hot-refresh": ensureDailyHotTopics(true); break;
       case "save-hot-topic":
         var hotList = D.aiHotTopics[t.getAttribute("data-platform")] || [];
         var hotTopic = hotList.filter(function (x) { return x.id === id; })[0];

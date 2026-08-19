@@ -306,6 +306,10 @@ input { font-family: inherit; }
 .hot-board-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--border); }
 .hot-board-title { font-size: 15.5px; font-weight: 700; }
 .hot-board-note { margin-top: 4px; font-size: 11.5px; color: var(--ink-3); }
+.hot-board-tools { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.hot-refresh-btn svg { transition: transform .2s ease; }
+.hot-refresh-btn[aria-busy="true"] svg { animation: hot-refresh-spin .8s linear infinite; }
+@keyframes hot-refresh-spin { to { transform: rotate(360deg); } }
 .hot-topic-list { padding: 0 20px; }
 .hot-topic-row { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
 .hot-topic-row:last-child { border-bottom: 0; }
@@ -805,8 +809,10 @@ input { font-family: inherit; }
   .mini-head .mini-value { margin-top: 0; font-size: 22px; line-height: 1; }
   .mini-head + .mini-list { margin-top: 8px; }
   .hot-board-head { align-items: stretch; flex-direction: column; padding: 16px; }
-  .hot-platform-tabs { display: grid; grid-template-columns: 1fr 1fr; }
+  .hot-board-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .hot-platform-tabs { display: grid; grid-template-columns: 1fr 1fr; min-width: 0; }
   .hot-platform-tabs .seg-btn { justify-content: center; }
+  .hot-refresh-btn { padding-inline: 12px; white-space: nowrap; }
   .hot-topic-list { padding: 0 16px; }
   .hot-topic-row { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 14px 0; }
   .hot-actions { grid-column: 2; }
@@ -815,6 +821,7 @@ input { font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   .yoyo-pet-btn.cheer { animation: none; }
+  .hot-refresh-btn[aria-busy="true"] svg { animation: none; }
 }
 .hot-signal-link { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
 .hot-signal-link:hover { color: var(--ink-1); }
